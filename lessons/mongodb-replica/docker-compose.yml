@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: mongo-learning
+    ports:
+      - 27017:27017 # Пробрасываем порт для доступа к MongoDB
+    volumes:
+      - mongo-data:/data/db # Храним данные в volume
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root # Имя пользователя для аутентификации
+      MONGO_INITDB_ROOT_PASSWORD: example # Пароль
+
+volumes:
+  mongo-data:
