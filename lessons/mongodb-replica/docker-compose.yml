@@ -1,16 +1,65 @@
 version: '3.8'
 
 services:
-  mongo:
+  mongo1:
     image: mongo:7
-    container_name: mongo-learning
+    container_name: mongo1
     ports:
-      - 27017:27017 # Пробрасываем порт для доступа к MongoDB
+      - 27017:27017
+    networks:
+      - mongo-cluster
     volumes:
-      - mongo-data:/data/db # Храним данные в volume
+      - ./mongo-keyfile:/data/mongo-keyfile:ro
+#      - ./data1:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root # Имя пользователя для аутентификации
-      MONGO_INITDB_ROOT_PASSWORD: example # Пароль
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    command: ["mongod", "--replSet", "rs0", "--port", "27017", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
 
-volumes:
-  mongo-data:
+  mongo2:
+    image: mongo:7
+    container_name: mongo2
+    ports:
+      - 27018:27018
+    networks:
+      - mongo-cluster
+    volumes:
+      - ./mongo-keyfile:/data/mongo-keyfile:ro
+   #   - ./data2:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    command: ["mongod", "--replSet", "rs0", "--port", "27018", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
+
+  mongo3:
+    image: mongo:7
+    container_name: mongo3
+    ports:
+      - 27019:27019
+    networks:
+      - mongo-cluster
+    volumes:
+      - ./mongo-keyfile:/data/mongo-keyfile:ro
+    #  - ./data3:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    command: ["mongod", "--replSet", "rs0", "--port", "27019", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
+
+  mongo-arbiter:
+    image: mongo:7
+    container_name: mongo-arbiter
+    networks:
+      - mongo-cluster
+    volumes:
+      - ./mongo-keyfile:/data/mongo-keyfile:ro
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    command: ["mongod", "--replSet", "rs0", "--port", "27020", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"] # Арбитр не требует аутентификации и хранения данных
+    ports:
+      - 27020:27020
+
+networks:
+  mongo-cluster:
+    driver: bridge

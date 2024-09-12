@@ -5,14 +5,20 @@ import {Cat} from "./entities/cat.entity";
 
 @Injectable()
 export class CatsService {
-    constructor(@InjectModel(Cat.name) private catModel: Model<Cat>) {}
+    constructor(
+        @InjectModel(Cat.name, 'write') private catModelWrite: Model<Cat>,
+        @InjectModel(Cat.name, 'read') private catModelRead: Model<Cat>,
+        ) {}
 
     async create(createCatDto: Cat): Promise<Cat> {
-        const createdCat = new this.catModel(createCatDto);
-        return createdCat.save();
+        const createdCat = new this.catModelWrite(createCatDto);
+        console.log('before save')
+        const saveResult = await createdCat.save();
+        console.log('save result')
+        return saveResult;
     }
 
     async findAll(): Promise<Cat[]> {
-        return this.catModel.find().exec();
+        return this.catModelRead.find().exec();
     }
 }
