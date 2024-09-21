@@ -478,5 +478,41 @@ export class UsersController {
         return users
     }
 
+    @Get('two-top-users-with-3-top-wallets-and-count-of-usd-wallets-with-cte-subquery')
+    async getTopUsersWith3TopWalletsAndCountOfUsdWalletsSubQueryInsideJoinWithCTESubquery() {
+
+        const owner_sumQueryBuilder = this.walletsRepo
+            .createQueryBuilder('w')
+            .select([`sum("balance") as usd_sum`, `"ownerId"`])
+            .where(`w.currency = 'USD'`)
+            .groupBy('w."ownerId"');
+
+        const top_3_wallets_queryBuilder = this.usersRepo
+            .createQueryBuilder('u')
+            .select('u.id as user_id')
+            .addSelect(qb => qb
+                .select(`jsonb_agg(json_build_object('w_id', w3.id, 'w_title', w3.title, 'w_balance', w3.balance))`)
+                .from(qb => qb
+                    .select('*')
+                    .from(Wallet, 'w2')
+                    .where(`w2."ownerId" = u."id" and w2.currency = 'USD'`)
+                    .orderBy(`w2.balance`, 'DESC')
+                    .limit(3), 'w3'
+                ), 'top_wallets');
+
+
+        const users = await this.usersRepo
+            .createQueryBuilder('u')
+            .addCommonTableExpression(owner_sumQueryBuilder, 'owner_sum')
+            .addCommonTableExpression(top_3_wallets_queryBuilder, 'top_3_wallets')
+            .select(['u.*', 'os.usd_sum as usd_wallets_balance', 't3w.top_wallets'])
+            .leftJoin('owner_sum', 'os', 'u.id = os."ownerId"')
+            .leftJoin('top_3_wallets', 't3w', 'u.id = t3w."user_id"')
+            .orderBy('usd_wallets_balance', 'DESC', 'NULLS LAST')
+            .limit(3)
+            .getRawMany();
+        return users
+    }
+
 }
 
