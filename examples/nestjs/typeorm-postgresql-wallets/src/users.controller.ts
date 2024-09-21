@@ -7,6 +7,7 @@ import {Wallet} from "./db/entities/wallet.entity";
 import {WalletSharing} from "./db/entities/wallet-sharing.entity";
 import {WalletSharingLimit} from "./db/entities/wallet-sharing-limit.entity";
 import {ApiPagination} from "./custom-decorators";
+import {ApiOperation} from "@nestjs/swagger";
 
 @Controller('users')
 export class UsersController {
@@ -53,14 +54,13 @@ export class UsersController {
                 const oneDay = 86400000; // 24 * 60 * 60 * 1000 milliseconds
 
 
-
                 for (let j = 1; j <= 20 - i; j++) {
                     const wallet = await this.walletsRepo.save({
                         title: `Wallet${j} of User${i}`,
-                        currency: Math.random() > 0.5 ? 'USD': 'EUR',
+                        currency: Math.random() > 0.5 ? 'USD' : 'EUR',
                         owner: user,
                         balance: j,
-                        addedAt:  new Date(Date.now() + j * oneDay)
+                        addedAt: new Date(Date.now() + j * oneDay)
                     });
 
                     for (let k = 1; k <= 5; k++) {
@@ -216,8 +216,6 @@ export class UsersController {
     }
 
 
-
-
     @Get('users-with-wallets-with-cte')
     @ApiPagination()
     async getUsersWithWalletsWithCTE(
@@ -288,8 +286,8 @@ export class UsersController {
             .select(['w.*', `json_build_object('firstName', u.firstName) as owner`])
             .leftJoin('w.owner', 'u')
             .getRawMany();
-            // не будет работать
-            //.getMany();
+        // не будет работать
+        //.getMany();
 
         return {
             data: wallets,
@@ -307,11 +305,11 @@ export class UsersController {
     ) {
         const wallets = await this.dataSource
             .createQueryBuilder(User, 'u')
-            .select(['u.*', `jsonb_agg(json_build_object('balance', w.balance, 'currency', w.currency)) as owner`])
+            .select(['u.*', `jsonb_agg(json_build_object('balance', w.balance, 'currency', w.currency)) as wallets`])
             .leftJoin('u.wallets', 'w')
             .groupBy('u.id')
             .getRawMany();
-            //.getMany();
+        //.getMany();
 
         return {
             data: wallets,
@@ -319,8 +317,6 @@ export class UsersController {
             limit,
         };
     }
-
-
 
 
     @Get('users-with-wallets-count')
@@ -358,8 +354,8 @@ export class UsersController {
             .createQueryBuilder('u')
             .select(['u.*', '"walletsCounts".count'])
             .leftJoin(ownerIdsWithWalletsCounts,
-                    'walletsCounts',
-                    '"walletsCounts"."ownerId" = u."id"')
+                'walletsCounts',
+                '"walletsCounts"."ownerId" = u."id"')
             .getRawMany();
 
         return {
@@ -439,6 +435,48 @@ export class UsersController {
         };
     }
 
+
+    @Get('two-top-users-with-3-top-wallets-and-count-of-usd-wallets-with-subquery-inside-select')
+    async getTopUsersWith3TopWalletsAndCountOfUsdWallets() {
+        const users = await this.usersRepo
+            .createQueryBuilder('u')
+            .select(['u.*'])
+            .addSelect((qb) => qb
+                .select(['count(*)'])
+                .from(Wallet, 'w')
+                .where(`w.currency = :currency and w."ownerId" = u.id`, {currency: 'USD'}))
+            .orderBy('u.id', "ASC")
+            .limit(2)
+            .getRawMany();
+        return users
+    }
+
+    @Get('two-top-users-with-3-top-wallets-and-count-of-usd-wallets-with-subquery-join')
+    async getTopUsersWith3TopWalletsAndCountOfUsdWalletsSubQueryInsideJoin() {
+        const users = await this.usersRepo
+            .createQueryBuilder('u')
+            .select(['u.*', '"walletsCounts".count'])
+            .addSelect((qb1) => qb1
+                .select(`jsonb_agg(json_build_object('wId', "threeTopWalletsPerUser".id, 'wTitle', "threeTopWalletsPerUser".title, 'wBalance', "threeTopWalletsPerUser".balance))`)
+                .from((qb2) => qb2
+                    .select('"innerW".*')
+                    .from(Wallet, 'innerW')
+                    .where(`"innerW".currency = 'USD' and "innerW"."ownerId" = u.id`, {currency: 'USD'})
+                    .orderBy('"innerW".balance', 'DESC')
+                    .limit(3), 'threeTopWalletsPerUser'
+                )
+            )
+            .leftJoin((qb) =>   qb
+                .select(['count(*)', '"ownerId"'])
+                .from(Wallet, 'w')
+                .where(`w.currency = 'USD' `, {currency: 'USD'})
+                .groupBy('w.ownerId'),
+                'walletsCounts', '"walletsCounts"."ownerId" = u.id')
+            .orderBy('u.id', "ASC")
+            .limit(2)
+            .getRawMany();
+        return users
+    }
 
 }
 
