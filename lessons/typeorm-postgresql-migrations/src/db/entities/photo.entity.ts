@@ -32,4 +32,7 @@ export class Photo {
 
   @Column()
   [ownerId]: number;
+
+  @Column()
+  price: number;
 }

@@ -12,5 +12,13 @@ export class Wallet {
 
   @Column()
   @ApiProperty()
+  limits: number;
+
+  @Column()
+  @ApiProperty()
+  walletTitle: string;
+
+  @Column()
+  @ApiProperty()
   currency: 'USD' | 'EUR';
 }

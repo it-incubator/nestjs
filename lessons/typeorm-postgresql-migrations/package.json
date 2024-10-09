@@ -10,14 +10,18 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
+    "start:debug": "pnpm apply-migrations && nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "add-empty-migration": "typeorm-ts-node-esm migration:create ./src/migrations/empty",
+    "add-migration": "typeorm-ts-node-esm migration:generate  -d ./src/migrations-data-source.ts",
+    "apply-migrations": "typeorm-ts-node-esm migration:run -d ./src/migrations-data-source.ts",
+    "revert-migration": "typeorm-ts-node-esm migration:revert -d ./src/migrations-data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -25,6 +29,7 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/typeorm": "^10.0.2",
+    "dotenv": "^16.4.5",
     "pg": "^8.12.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",

@@ -6,26 +6,24 @@ import { Profile } from './db/entities/profile.entity';
 import {WalletSharing} from "./db/entities/wallet-sharing.entity";
 import {WalletSharingLimit} from "./db/entities/wallet-sharing-limit.entity";
 import {Wallet} from "./db/entities/wallet.entity";
-import {Users2Controller} from "./users2.controller";
-import {SnakeNamingStrategy} from "typeorm-naming-strategies";
+
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5433,
-      username: 'postgres',
+      port: 5441,
+      username: 'dimych1',
       password: 'it-incubator.io',
-      database: 'BankSystemTypeOrm',
+      database: 'db1',
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: true,
       logging: true,
-      namingStrategy: new SnakeNamingStrategy()
     }),
-    TypeOrmModule.forFeature([User, Profile, Wallet, WalletSharing, WalletSharingLimit]),
+    TypeOrmModule.forFeature([User, Profile, Wallet, WalletSharing, WalletSharingLimit])
   ],
-  controllers: [UsersController, Users2Controller],
+  controllers: [UsersController],
   providers: [],
 })
 export class AppModule {}

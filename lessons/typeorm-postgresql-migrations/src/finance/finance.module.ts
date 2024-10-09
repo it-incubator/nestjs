@@ -5,5 +5,6 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Wallet]), forwardRef(() => AuthModule)],
+  exports: [TypeOrmModule],
 })
 export class FinanceModule {}

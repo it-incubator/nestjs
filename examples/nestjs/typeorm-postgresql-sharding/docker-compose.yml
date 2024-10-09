@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres1:
+    image: postgres:latest
+    container_name: postgres_instance1
+    environment:
+      POSTGRES_USER: dimych1
+      POSTGRES_PASSWORD: it-incubator.io
+      POSTGRES_DB: db1
+    ports:
+      - "5441:5432"  # Порт для первого экземпляра
+    networks:
+      - network1
+  postgres2:
+    image: postgres:latest
+    container_name: postgres_instance2
+    environment:
+      POSTGRES_USER: dimych2
+      POSTGRES_PASSWORD: it-incubator.io
+      POSTGRES_DB: db2
+    ports:
+      - "5442:5432"  # Порт для второго экземпляра (изменен, чтобы избежать конфликта)
+    networks:
+      - network1
+
+networks:
+  network1:
+    driver: bridge
+

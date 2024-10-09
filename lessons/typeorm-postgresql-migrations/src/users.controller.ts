@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { User } from './db/entities/user.entity';
 import { DataSource, Repository } from 'typeorm';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
@@ -6,11 +14,13 @@ import { Profile } from './db/entities/profile.entity';
 import { Photo } from './db/entities/photo.entity';
 import { Album } from './db/entities/album.entity';
 import { Account } from './auth/db/account.entity';
+import { Wallet } from './finance/db/wallet.entity';
 
 @Controller('users')
 export class UsersController {
   constructor(
     @InjectRepository(User) private usersRepo: Repository<User>,
+    @InjectRepository(Wallet) private walletsRepo: Repository<Wallet>,
     @InjectRepository(Photo) private photosRepo: Repository<Photo>,
     @InjectRepository(Album) private albumsRepo: Repository<Album>,
     @InjectRepository(Account) private accountRepo: Repository<Account>,
@@ -20,6 +30,19 @@ export class UsersController {
   @Get()
   async getAll(): Promise<User[]> {
     return this.usersRepo.find();
+  }
+
+  @Get('wallets')
+  async getAllWallets(): Promise<Wallet[]> {
+    return this.walletsRepo.find();
+  }
+
+  @Get('wallets-raw')
+  async getAllWalletsRaw(): Promise<any[]> {
+    return this.walletsRepo
+      .createQueryBuilder('w')
+      .select('w.balance', 'w.id')
+      .getMany();
   }
 
   @Get('photos')
@@ -89,16 +112,25 @@ export class UsersController {
       body.balance = 10;
     }
 
-    this.usersRepo.save(body);
+    const user = this.usersRepo.create();
+    user.balance = 10;
+    user.setName(body.firstName, body.lastName);
+
+    this.usersRepo.save(user);
 
     // await this.usersRepo.insert(body);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: User) {
+  async update(@Param('id') id: string, @Body() body: any) {
     const user = await this.usersRepo.findOneBy({ id: Number(id) });
-    user.setName(body.name);
-    await this.usersRepo.save(user);
+    console.log(body);
+    if ((body.firstName && body.lastName) || body.name) {
+      user.setName(body.firstName, body.lastName);
+      await this.usersRepo.save(user);
+    } else {
+      throw new BadRequestException('incorrect username');
+    }
   }
 
   @Put(':id/profile')

@@ -7,4 +7,13 @@ export class Album {
 
   @Column()
   title: string;
+
+  @Column()
+  extraTitle: string;
+
+  @Column()
+  price: number;
+
+  // @Column()
+  // discount: number;
 }

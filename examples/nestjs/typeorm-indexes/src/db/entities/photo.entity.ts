@@ -13,13 +13,14 @@ import { Album } from './album.entity';
 const ownerId = 'ownerId';
 
 @Entity()
-@Index("IDX_e855f7e3519a6c2324c047b698", { synchronize: false })
-@Index(['ownerId', 'addedAt'])
+//@Index("IDX_e855f7e3519a6c2324c047b698", { synchronize: false })
+//@Index(['ownerId', 'addedAt'])
 export class Photo {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
+  @Index()
   url: string;
 
   @ManyToOne(() => User)

@@ -14,8 +14,23 @@ export class User {
   id: number;
 
   @Column()
-  @ApiProperty()
+  @ApiProperty({
+    deprecated: true,
+  })
   name: string;
+
+  @Column({
+    nullable: true,
+  })
+  dateOfBirth: Date;
+
+  @Column()
+  @ApiProperty()
+  firstName: string;
+
+  @Column()
+  @ApiProperty()
+  lastName: string;
 
   @Column({
     nullable: true,
@@ -31,11 +46,14 @@ export class User {
   @OneToOne(() => Profile, (profile) => profile.owner, { cascade: true })
   profile: Profile;
 
-  setName(newName: string) {
-    const namesParts = newName.split(' ');
-    if (namesParts.length < 2) throw Error('Incorrect name');
+  setName(firstName: string, lastName: string) {
+    // const namesParts = newName.split(' ');
+    // if (namesParts.length < 2) throw Error('Incorrect name');
 
-    this.name = newName;
+    this.firstName = firstName;
+    this.lastName = lastName;
+
+    this.name = `${firstName} ${lastName}`;
   }
 
   setAddress(newAddress) {
