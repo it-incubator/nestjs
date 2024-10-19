@@ -17,11 +17,12 @@ import {SnakeNamingStrategy} from "typeorm-naming-strategies";
       port: 5433,
       username: 'postgres',
       password: 'it-incubator.io',
-      database: 'BankSystemTypeOrm',
+      database: 'BankSystemTypeOrmCamecase',
+     // database: 'BankSystemTypeOrm', // snake_case
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: true,
       logging: true,
-      namingStrategy: new SnakeNamingStrategy()
+     // namingStrategy: new SnakeNamingStrategy()
     }),
     TypeOrmModule.forFeature([User, Profile, Wallet, WalletSharing, WalletSharingLimit]),
   ],

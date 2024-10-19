@@ -129,7 +129,7 @@ export class UsersController {
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10
     ) {
-        const [users, total] = await this.usersRepo
+        const users = await this.usersRepo
             .createQueryBuilder('u')
             // перечисляем нужные колонки, которые хотим получить, обращаясь к алисасу 'u
             .select(['u.id', 'u.firstName', 'u.lastName'])
@@ -137,8 +137,9 @@ export class UsersController {
             //.select(['u.*'])
             .skip((page - 1) * limit)
             .take(limit)
-            .getManyAndCount();
+            .getMany();
 
+        let total = 10;
         return {
             data: users,
             total,
@@ -178,7 +179,17 @@ export class UsersController {
     async walletsWithRowNumberByOwnerId() {
         const wallets = await this.walletsRepo
             .createQueryBuilder('w')
-            .select(['w.*', 'CAST(ROW_NUMBER() OVER (PARTITION BY w."ownerId" ORDER BY w."addedAt") as INT) AS "walletNumber"'])
+            .select(['currency', 'added_at as "addedAt"', 'CAST(ROW_NUMBER() OVER (PARTITION BY w.owner_id ORDER BY w.added_at) as INT) AS walletNumber'])
+            .getRawMany()
+        return wallets;
+    }
+
+    @Get('wallets-with-owner-name')
+    async walletsWithOwnerFirstName() {
+        const wallets = await this.walletsRepo
+            .createQueryBuilder('w')
+            .leftJoin(User, 'u', 'u.id = w."ownerId"')
+            .select(['u."firstName"', 'w."currency"', 'w."addedAt"'])
             .getRawMany()
         return wallets;
     }
@@ -297,7 +308,7 @@ export class UsersController {
     }
 
 
-    @Get('users-with-wallets-jsonb_agg')
+    @Get('users-with-wallets-jsonb_agg-with_default-emptyarray')
     @ApiPagination()
     async getWalletsWithOwner_jsonb_agg(
         @Query('page') page: number = 1,
@@ -305,7 +316,8 @@ export class UsersController {
     ) {
         const wallets = await this.dataSource
             .createQueryBuilder(User, 'u')
-            .select(['u.*', `jsonb_agg(json_build_object('balance', w.balance, 'currency', w.currency)) as wallets`])
+            .select('u.*')
+            .addSelect(`COALESCE(jsonb_agg(json_build_object('balance', w.balance, 'currency', w.currency)), '[]') as wallets`)
             .leftJoin('u.wallets', 'w')
             .groupBy('u.id')
             .getRawMany();
@@ -441,13 +453,25 @@ export class UsersController {
         const users = await this.usersRepo
             .createQueryBuilder('u')
             .select(['u.*'])
+            .addSelect((qb1) => qb1
+                .select(`jsonb_agg(json_build_object('wId', "threeTopWalletsPerUser".id, 'wTitle', "threeTopWalletsPerUser".title, 'wBalance', "threeTopWalletsPerUser".balance))`)
+                .from((qb2) => qb2
+                    .select('"innerW".*')
+                    .from(Wallet, 'innerW')
+                    .where(`"innerW".currency = 'USD' and "innerW"."ownerId" = u.id`, {currency: 'USD'})
+                    .orderBy('"innerW".balance', 'DESC')
+                    .limit(3), 'threeTopWalletsPerUser'
+                )
+            )
             .addSelect((qb) => qb
                 .select(['count(*)'])
                 .from(Wallet, 'w')
-                .where(`w.currency = :currency and w."ownerId" = u.id`, {currency: 'USD'}))
+                .where(`w.currency = 'USD' and w."ownerId" = u.id`, {currency: 'USD'})
+                )
             .orderBy('u.id', "ASC")
             .limit(2)
             .getRawMany();
+
         return users
     }
 
@@ -466,11 +490,11 @@ export class UsersController {
                     .limit(3), 'threeTopWalletsPerUser'
                 )
             )
-            .leftJoin((qb) =>   qb
-                .select(['count(*)', '"ownerId"'])
-                .from(Wallet, 'w')
-                .where(`w.currency = 'USD' `, {currency: 'USD'})
-                .groupBy('w.ownerId'),
+            .leftJoin((qb) => qb
+                    .select(['count(*)', '"ownerId"'])
+                    .from(Wallet, 'w')
+                    .where(`w.currency = 'USD' `, {currency: 'USD'})
+                    .groupBy('w.ownerId'),
                 'walletsCounts', '"walletsCounts"."ownerId" = u.id')
             .orderBy('u.id', "ASC")
             .limit(2)
