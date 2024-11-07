@@ -3,7 +3,6 @@ import { DbService } from '../db.service';
 import { Payment } from '../../entities/payment.entity';
 import { delay, getUniqId } from '../delay';
 import { Client } from '../../entities/client.entity';
-import { QueryFailedError } from 'typeorm';
 import { registrateProvider } from '../../provider-registrator';
 
 @Injectable({
