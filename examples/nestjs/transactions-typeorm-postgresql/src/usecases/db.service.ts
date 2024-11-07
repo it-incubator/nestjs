@@ -11,12 +11,17 @@ import { registrateProvider } from '../provider-registrator';
 })
 export class DbService {
   public queryRunner: QueryRunner = null;
+  public instanceId: number;
+  static instanceCount = 0;
+
   constructor(
     @InjectRepository(Client) private _clientsRepo: Repository<Client>,
     @InjectRepository(Product) private _productsRepo: Repository<Product>,
     @InjectRepository(Payment) private _paymentsRepo: Repository<Payment>,
     private dataSource: DataSource,
-  ) {}
+  ) {
+    this.instanceId = ++DbService.instanceCount;
+  }
 
   get clientsRepo() {
     if (this.queryRunner !== null) {

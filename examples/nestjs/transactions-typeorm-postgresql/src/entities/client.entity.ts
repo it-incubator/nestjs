@@ -5,7 +5,7 @@ export class Client {
   @PrimaryColumn()
   id: number;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar' })
   name: string;
 
   @Column()

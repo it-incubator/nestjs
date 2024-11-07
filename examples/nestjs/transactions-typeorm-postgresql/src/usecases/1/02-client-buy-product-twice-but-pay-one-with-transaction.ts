@@ -16,9 +16,10 @@ export class ClientBuyProductTwiceButPayOneWithTransaction {
       const client = await this.dbService.clientsRepo.findOneBy({ id: 1 });
       const product = await this.dbService.productsRepo.findOneBy({ id: 1 });
 
-      await delay(1000);
       client.balance = client.balance - product.price;
       await this.dbService.clientsRepo.save(client);
+
+      await delay(1000);
 
       product.availableQuantity--;
       await this.dbService.productsRepo.save(product);
@@ -33,7 +34,6 @@ export class ClientBuyProductTwiceButPayOneWithTransaction {
 
       await this.dbService.commitTransaction();
     } catch (error) {
-      debugger;
       await this.dbService.rollbackTransaction();
       throw error;
     }

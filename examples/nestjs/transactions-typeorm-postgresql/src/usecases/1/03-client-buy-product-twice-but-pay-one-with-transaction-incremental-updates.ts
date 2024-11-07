@@ -12,7 +12,7 @@ export class ClientBuyProductTwiceButPayOneWithTransactionIncrementalUpdates {
   constructor(private dbService: DbService) {}
   async execute() {
     try {
-      //await this.dbService.startTransaction();
+      await this.dbService.startTransaction();
       const client = await this.dbService.clientsRepo.findOneBy({ id: 1 });
       const product = await this.dbService.productsRepo.findOneBy({ id: 1 });
 
@@ -21,6 +21,8 @@ export class ClientBuyProductTwiceButPayOneWithTransactionIncrementalUpdates {
         throw new Error('No money');
       }
 
+      // вторая транзакция не сможет обвноить запись, точнее будет ждать, пока первая не  закоммититься
+      // дефолтное поведение для read_commited... изменнёная строка, но не закомиченная блокируется до коммита
       // client.balance = client.balance - product.price;
       await this.dbService.clientsRepo
         .createQueryBuilder()
@@ -29,8 +31,8 @@ export class ClientBuyProductTwiceButPayOneWithTransactionIncrementalUpdates {
         .setParameters({ price: product.price }) // Replace 1 with the desired increment value
         .where('id = :id', { id: client.id })
         .execute();
+      await delay(1000);
 
-      product.availableQuantity--;
       await this.dbService.productsRepo
         .createQueryBuilder()
         .update()
@@ -46,9 +48,9 @@ export class ClientBuyProductTwiceButPayOneWithTransactionIncrementalUpdates {
 
       await this.dbService.paymentsRepo.save(newPayment);
 
-      //  await this.dbService.commitTransaction();
+      await this.dbService.commitTransaction();
     } catch (error) {
-      // await this.dbService.rollbackTransaction();
+      await this.dbService.rollbackTransaction();
       throw error;
     }
   }

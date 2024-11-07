@@ -12,7 +12,7 @@ import { registrateProvider } from '../../provider-registrator';
 export class ClientCantBuyProductTwiceBecauseNoMoneyWithPessimisticLock {
   constructor(private dbService: DbService) {
     this.instanceId =
-      ClientCantBuyProductTwiceBecauseNoMoneyWithPessimisticLock.instancesCount++;
+      ++ClientCantBuyProductTwiceBecauseNoMoneyWithPessimisticLock.instancesCount;
   }
   readonly instanceId: number;
   static instancesCount = 0;
@@ -26,6 +26,11 @@ export class ClientCantBuyProductTwiceBecauseNoMoneyWithPessimisticLock {
       const product = await this.dbService.productsRepo.findOneBy({ id: 1 });
 
       await delay(1000);
+
+      if (client.balance < product.price) {
+        throw new Error('No money');
+      }
+
       client.balance = client.balance - product.price;
       await this.dbService.clientsRepo.save(client);
 

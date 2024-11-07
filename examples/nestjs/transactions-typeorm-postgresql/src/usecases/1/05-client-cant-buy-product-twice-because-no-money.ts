@@ -29,19 +29,18 @@ export class ClientCantBuyProductTwiceBecauseNoMoney {
     DECLARE
         balance_deduction NUMERIC := ${product.price};
         client_id NUMERIC := '${client.id}';
-        current_balance NUMERIC := ${client.balance};
+        prev_balance NUMERIC := ${client.balance};
     BEGIN
         UPDATE client
         SET balance = balance - balance_deduction
-        WHERE id = client_id AND balance = current_balance;
+        WHERE id = client_id AND balance = prev_balance;
 
         IF NOT FOUND THEN
             RAISE EXCEPTION 'No rows were updated. Possible concurrency issue or insufficient balance.';
         END IF;
     END $$;
 `);
-
-      product.availableQuantity--;
+      await delay(1000);
       await this.dbService.productsRepo
         .createQueryBuilder()
         .update()

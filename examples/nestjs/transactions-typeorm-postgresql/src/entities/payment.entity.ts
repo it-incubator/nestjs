@@ -15,9 +15,9 @@ export class Payment {
   @PrimaryColumn()
   id: number;
 
-  @Column({ type: 'varchar', nullable: true })
-  title: string;
-
+  /**
+   * sum price of all products
+   */
   @Column()
   amount: number;
 

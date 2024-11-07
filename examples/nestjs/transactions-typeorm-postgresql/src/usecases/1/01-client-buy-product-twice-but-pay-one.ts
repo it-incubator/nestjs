@@ -12,7 +12,7 @@ export class ClientBuyProductTwiceButPayOne {
     const client = await this.dbService.clientsRepo.findOneBy({ id: 1 });
     const product = await this.dbService.productsRepo.findOneBy({ id: 1 });
 
-    await delay(1000);
+    await delay(100);
     client.balance = client.balance - product.price;
     await this.dbService.clientsRepo.save(client);
 

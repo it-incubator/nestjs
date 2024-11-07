@@ -6,6 +6,7 @@ import { ClientBuyProductTwiceButPayOneWithTransactionIncrementalUpdates } from 
 import { ClientBuyProductTwiceButNoMoney } from './04-client-buy-product-twice-but-no-money';
 import { ClientCantBuyProductTwiceBecauseNoMoney } from './05-client-cant-buy-product-twice-because-no-money';
 import { ClientCantBuyProductTwiceBecauseNoMoneyWithPessimisticLock } from './06-client-cant-buy-product-twice-because-no-money-with-pessimistic-lock';
+import { ClientBuyProductTwiceButPayOne } from './01-client-buy-product-twice-but-pay-one';
 
 describe('usecases', () => {
   let dbService: DbService;
@@ -24,6 +25,27 @@ describe('usecases', () => {
   });
 
   describe('root', () => {
+    it('incorrect behavior"', async () => {
+      await dbService.seed({
+        clients: [{ id: 1, name: 'Dimych', balance: 2 }],
+        products: [{ id: 1, title: 'IPhone', price: 1, availableQuantity: 10 }],
+        payments: [],
+      });
+
+      const useCase1 = await resolve(ClientBuyProductTwiceButPayOne);
+      const useCase2 = await resolve(ClientBuyProductTwiceButPayOne);
+
+      await Promise.all([useCase1.execute(), useCase2.execute()]);
+
+      const client = await dbService.clientsRepo.findOneBy({ id: 1 });
+      const payments = await dbService.paymentsRepo.find();
+      const product = await dbService.productsRepo.findOneBy({ id: 1 });
+
+      expect(client.balance).toBe(1);
+      expect(payments.length).toBe(2);
+      expect(product.availableQuantity).toBe(9);
+    });
+
     it('incorrect behavior even with transaction"', async () => {
       await dbService.seed({
         clients: [{ id: 1, name: 'Dimych', balance: 2 }],
@@ -31,9 +53,6 @@ describe('usecases', () => {
         payments: [],
       });
 
-      // const useCase = app.get<ClientBuyProductTwiceButPayOne>(
-      //   ClientBuyProductTwiceButPayOne,
-      // );
       const useCase1 = await resolve(
         ClientBuyProductTwiceButPayOneWithTransaction,
       );
@@ -58,9 +77,6 @@ describe('usecases', () => {
         payments: [],
       });
 
-      // const useCase = app.get<ClientBuyProductTwiceButPayOne>(
-      //   ClientBuyProductTwiceButPayOne,
-      // );
       const useCase1 = await resolve(
         ClientBuyProductTwiceButPayOneWithTransactionIncrementalUpdates,
       );
@@ -85,9 +101,6 @@ describe('usecases', () => {
         payments: [],
       });
 
-      // const useCase = app.get<ClientBuyProductTwiceButPayOne>(
-      //   ClientBuyProductTwiceButPayOne,
-      // );
       const useCase1 = await resolve(ClientBuyProductTwiceButNoMoney);
       const useCase2 = await resolve(ClientBuyProductTwiceButNoMoney);
 
@@ -131,9 +144,6 @@ describe('usecases', () => {
         payments: [],
       });
 
-      // const useCase = app.get<ClientBuyProductTwiceButPayOne>(
-      //   ClientBuyProductTwiceButPayOne,
-      // );
       const useCase1 = await resolve(
         ClientCantBuyProductTwiceBecauseNoMoneyWithPessimisticLock,
       );
@@ -141,7 +151,15 @@ describe('usecases', () => {
         ClientCantBuyProductTwiceBecauseNoMoneyWithPessimisticLock,
       );
 
-      await Promise.all([useCase1.execute(), useCase2.execute()]);
+      const settledResult = await Promise.allSettled([
+        useCase1.execute(),
+        useCase2.execute(),
+      ]);
+
+      expect(settledResult[1].status).toBe('rejected');
+
+      // @ts-ignore
+      expect(settledResult[1].reason.message).toBe('No money');
 
       const client = await dbService.clientsRepo.findOneBy({ id: 1 });
       const payments = await dbService.paymentsRepo.find();
