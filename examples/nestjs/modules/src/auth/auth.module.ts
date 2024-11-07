@@ -3,7 +3,9 @@ import { AuthService } from './auth-service/auth.service';
 
 @Module({})
 export class AuthModule {
-  static register(hasRightStrategy: () => boolean): DynamicModule {
+  static async registerAsync(
+    hasRightStrategy: () => Promise<boolean>,
+  ): Promise<DynamicModule> {
     return {
       module: AuthModule,
       providers: [

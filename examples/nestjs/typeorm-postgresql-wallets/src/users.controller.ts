@@ -1,13 +1,12 @@
-import {Body, Controller, Get, Param, Post, Put, Query} from '@nestjs/common';
-import {User} from './db/entities/user.entity';
-import {DataSource, Repository, SelectQueryBuilder} from 'typeorm';
-import {InjectDataSource, InjectRepository} from '@nestjs/typeorm';
-import {Profile} from './db/entities/profile.entity';
-import {Wallet} from "./db/entities/wallet.entity";
-import {WalletSharing} from "./db/entities/wallet-sharing.entity";
-import {WalletSharingLimit} from "./db/entities/wallet-sharing-limit.entity";
-import {ApiPagination} from "./custom-decorators";
-import {ApiOperation} from "@nestjs/swagger";
+import { Controller, Get, Post, Query } from '@nestjs/common';
+import { User } from './db/entities/user.entity';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { Profile } from './db/entities/profile.entity';
+import { Wallet } from './db/entities/wallet.entity';
+import { WalletSharing } from './db/entities/wallet-sharing.entity';
+import { WalletSharingLimit } from './db/entities/wallet-sharing-limit.entity';
+import { ApiPagination } from './custom-decorators';
 
 @Controller('users')
 export class UsersController {

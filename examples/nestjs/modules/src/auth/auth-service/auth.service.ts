@@ -2,10 +2,10 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
-  constructor(private isHasRightStrategy: () => boolean) {}
+  constructor(private isHasRightStrategy: () => Promise<boolean>) {}
 
-  totallyRemoveUser() {
-    if (this.isHasRightStrategy()) {
+  async totallyRemoveUser() {
+    if (await this.isHasRightStrategy()) {
       console.log('USER WILL BE DELETED');
       return true;
     } else {
