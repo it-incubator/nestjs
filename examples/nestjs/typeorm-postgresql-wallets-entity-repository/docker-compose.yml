@@ -4,6 +4,6 @@ services:
     environment:
       POSTGRES_USER: dimych
       POSTGRES_PASSWORD: it-incubator.io
-      POSTGRES_DB: transactions_example
+      POSTGRES_DB: example_db
     ports:
       - "5432:5432"
