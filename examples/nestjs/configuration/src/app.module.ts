@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppConfig } from './app.config';
 import { TestController } from './test.controller';
 import { ConfigModule } from '@nestjs/config';
-import { getConfiguration } from './config/get-configuration';
 import { AuthModule } from './auth/auth.module';
+import { getConfigurationAsync } from './config/get-configuration';
+import { getSettingsAsync } from './config/get-settings-async';
+import { EnvironmentConfig } from './env.config';
 
 const notProducationControllers = [] as any[];
 
@@ -22,11 +24,12 @@ console.log('app.module.ts PORT: ' + process.env.PORT);
         `.env.${process.env.NODE_ENV}`,
         '.env',
       ],
-      load: [getConfiguration],
+      ignoreEnvVars: true,
+      load: [getSettingsAsync, getConfigurationAsync], // last more prioritized, but not stronger then env
     }),
     AuthModule,
   ],
   controllers: [AppController, ...notProducationControllers],
-  providers: [AppService],
+  providers: [AppConfig, EnvironmentConfig],
 })
 export class AppModule {}
