@@ -6,7 +6,7 @@ import { Profile } from './db/entities/profile.entity';
 import { WalletSharing } from './db/entities/wallet-sharing.entity';
 import { WalletSharingLimit } from './db/entities/wallet-sharing-limit.entity';
 import { Wallet } from './db/entities/wallet.entity';
-import { Users2Controller } from './users2.controller';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Module({
   imports: [
@@ -16,8 +16,8 @@ import { Users2Controller } from './users2.controller';
       port: 5433,
       username: 'postgres',
       password: 'it-incubator.io',
-      database: 'BankSystemTypeOrmCamecase',
-     // database: 'BankSystemTypeOrm', // snake_case
+     // database: 'BankSystemTypeOrmCamecase',
+      database: 'BankSystemTypeOrm', // snake_case
       autoLoadEntities: true,
       synchronize: true,
       logging: true,
@@ -25,7 +25,7 @@ import { Users2Controller } from './users2.controller';
     }),
     TypeOrmModule.forFeature([User, Profile, Wallet, WalletSharing, WalletSharingLimit]),
   ],
-  controllers: [UsersController, Users2Controller],
+  controllers: [UsersController],
   providers: [],
 })
 export class AppModule {}

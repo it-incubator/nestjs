@@ -7,6 +7,10 @@ import { Wallet } from './db/entities/wallet.entity';
 import { WalletSharing } from './db/entities/wallet-sharing.entity';
 import { WalletSharingLimit } from './db/entities/wallet-sharing-limit.entity';
 import { ApiPagination } from './custom-decorators';
+import { plainToInstance } from 'class-transformer';
+import { UserViewModel } from './dto/dto';
+import { ApiQuery } from '@nestjs/swagger';
+
 
 @Controller('users')
 export class UsersController {
@@ -95,6 +99,8 @@ export class UsersController {
     }
 
 
+
+
     @Get('users-full-entities')
     @ApiPagination()
     async usersFullEntities(
@@ -120,6 +126,115 @@ export class UsersController {
             totalPages: Math.ceil(total / limit),
         };
     }
+
+    @Get('users-full-entities-with-wallets')
+    @ApiPagination()
+    async usersFullEntitiesWithWallets(
+      @Query('page') page: number = 1,
+      @Query('limit') limit: number = 10
+    ) {
+        const [users, total] = await this.usersRepo
+          .createQueryBuilder('u')
+          .leftJoinAndSelect('u.wallets', 'w')
+          .select(['u.id','u.firstName', 'w.id', 'w.balance' ])
+          .skip((page - 1) * limit)
+          .take(limit)
+          .getManyAndCount();
+
+        return {
+            data: users,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+
+    @Get('users-full-entities-raw')
+    @ApiPagination()
+    async usersFullEntitiesRaw(
+      @Query('page') page: number = 1,
+      @Query('limit') limit: number = 10,
+
+    ) {
+        const users = await this.usersRepo
+          .createQueryBuilder('u')
+          .select(['id', 'first_name', 'last_name'])
+          .skip((page - 1) * limit)
+          .take(limit)
+          .getRawMany();
+
+        return users;
+    }
+
+
+    @Get('users-entities-raw-with-transformation')
+    @ApiPagination()
+    async usersEntitiesWithTransformation(
+      @Query('page') page: number = 1,
+      @Query('limit') limit: number = 10,
+
+    ) {
+        const users = await this.usersRepo
+          .createQueryBuilder('u')
+          .select(['id', 'first_name', 'last_name'])
+          .skip((page - 1) * limit)
+          .take(limit)
+          .getRawMany();
+
+        const transformedUsers = plainToInstance(UserViewModel, users, {
+            excludeExtraneousValues: true,
+        });
+
+        return transformedUsers;
+    }
+
+    @Get('users-entities-raw-with-aliases')
+    @ApiPagination()
+    async usersEntitiesWithAliases(
+      @Query('page') page: number = 1,
+      @Query('limit') limit: number = 10,
+
+    ) {
+        const users = await this.usersRepo
+          .createQueryBuilder('u')
+          .select(['id', '"firstName"', '"lastName"'])
+          .skip((page - 1) * limit)
+          .take(limit)
+          .getRawMany();
+
+        return users;
+    }
+
+    @Get('users-entities-raw-with-filter')
+    @ApiPagination()
+    @ApiQuery({ name: 'firstName', required: false, type: String })
+    async usersEntitiesWithFilter(
+      @Query('page') page: number = 1,
+      @Query('limit') limit: number = 10,
+      @Query('firstName') firstName: string | null = null,
+    //  @Query('sortBy') sortBy: string = 'id',
+     // @Query('sortOrder') sortOrder: string = 'asc'
+
+    ) {
+        let userSelectQueryBuilder = this.usersRepo
+          .createQueryBuilder('u')
+          .select(['id', '"firstName"', '"lastName"'])
+
+        if (firstName) {
+            userSelectQueryBuilder.where('"firstName" like :firstName', {firstName: firstName})
+        }
+
+        userSelectQueryBuilder.skip((page - 1) * limit)
+          .take(limit)
+
+        const users = await userSelectQueryBuilder.getRawMany()
+        const count = await userSelectQueryBuilder.getCount()
+        return { users, count};
+    }
+
+
 
 
     @Get('users-partially-entities')
@@ -315,8 +430,13 @@ export class UsersController {
     ) {
         const wallets = await this.dataSource
             .createQueryBuilder(User, 'u')
-            .select('u.*')
-            .addSelect(`COALESCE(jsonb_agg(json_build_object('balance', w.balance, 'currency', w.currency)), '[]') as wallets`)
+            .select(['u.id', 'u."firstName"'])
+            .addSelect(`COALESCE(
+                jsonb_agg(
+                       json_build_object('id', w.id, 'balance', w.balance, 'currency', w.currency)
+                    ) FILTER (WHERE w.id IS NOT NULL),
+                '[]')  
+                as wallets`)
             .leftJoin('u.wallets', 'w')
             .groupBy('u.id')
             .getRawMany();
@@ -451,7 +571,7 @@ export class UsersController {
     async getTopUsersWith3TopWalletsAndCountOfUsdWallets() {
         const users = await this.usersRepo
             .createQueryBuilder('u')
-            .select(['u.*'])
+            .select(['u.id', 'u.firstName'])
             .addSelect((qb1) => qb1
                 .select(`jsonb_agg(json_build_object('wId', "threeTopWalletsPerUser".id, 'wTitle', "threeTopWalletsPerUser".title, 'wBalance', "threeTopWalletsPerUser".balance))`)
                 .from((qb2) => qb2

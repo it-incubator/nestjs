@@ -28,4 +28,8 @@ export class User {
 
   @OneToMany(() => WalletSharing, (walletSharing) => walletSharing.user)
   walletSharings: WalletSharing[];
+
+  static create(dto) {
+
+  }
 }
