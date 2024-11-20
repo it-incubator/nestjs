@@ -8,11 +8,21 @@ console.log('before: ', process.env.DB_USER);
 // should be before all other
 const configModule = ConfigModule.forRoot({
   envFilePath: [
+    `.env.testing.local`,
+    `.env.testing`,
+    '.env.production',
+  ],
+  isGlobal: true,
+});
+
+const configModule2 = ConfigModule.forRoot({
+  envFilePath: [
     process.env.ENV_FILE_PATH?.trim(), // HIGHEST PRIORITY в сравнении с дургими файлами ниже, Помимо trim нужно быть оатсорожным спрокижыванием путя в стиле винды. лучше прокидывать со слэшем /
     `.env.${process.env.NODE_ENV}.local`, // in gitignore for local development  only or for local testing if want other settings
     `.env.${process.env.NODE_ENV}`, // for staging/development/testing (for testing in CICD env stronger)
     '.env.production',
   ],
+  isGlobal: true,
 });
 
 console.log('after: ', process.env.DB_USER);
