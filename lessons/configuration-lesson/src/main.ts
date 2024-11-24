@@ -4,9 +4,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CoreConfig } from './core/core.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const appContext = await NestFactory.createApplicationContext(AppModule);
+  const coreConfig = appContext.get<CoreConfig>(CoreConfig);
 
-  const coreConfig = app.get<CoreConfig>(CoreConfig);
+  const appModule = await AppModule.forRoot(coreConfig);
+
+  const app = await NestFactory.create(appModule);
 
   if (coreConfig.isSwaggerEnabled) {
     const config = new DocumentBuilder()

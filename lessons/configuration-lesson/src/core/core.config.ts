@@ -26,7 +26,11 @@ export class CoreConfig {
   })
   mongoURI: string = this.configService.get('MONGO_URI');
 
-  @IsEnum(Environments)
+  @IsEnum(Environments, {
+    message:
+      'Ser correct NODE_ENV value, available values: ' +
+      configValidationUtility.getEnumValues(Environments).join(', '),
+  })
   env: string = this.configService.get('NODE_ENV');
 
   @IsBoolean({
@@ -35,6 +39,14 @@ export class CoreConfig {
   })
   isSwaggerEnabled: boolean = configValidationUtility.convertToBoolean(
     this.configService.get('IS_SWAGGER_ENABLED'),
+  );
+
+  @IsBoolean({
+    message:
+      'Set Env variable INCLUDE_TESTING_MODULE to enable/disable Dangerous for production TestingModule, example: true, available values: true, false, 0, 1',
+  })
+  includeTestingModule: boolean = configValidationUtility.convertToBoolean(
+    this.configService.get('INCLUDE_TESTING_MODULE'),
   );
 
   constructor(private configService: ConfigService) {
