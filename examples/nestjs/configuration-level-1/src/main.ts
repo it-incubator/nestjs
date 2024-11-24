@@ -1,23 +1,27 @@
-//import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { CoreConfig } from './core/core.config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const appContext = await NestFactory.createApplicationContext(AppModule);
+  const coreConfig = appContext.get<CoreConfig>(CoreConfig);
 
-  const config = new DocumentBuilder()
-    .setTitle('IT-INCUBATOR.IO')
-    .setDescription('The cats API description')
-    .setVersion('1.0')
-    .addTag('cats')
-    .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  const appModule = await AppModule.forRoot(coreConfig);
 
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-  });
+  const app = await NestFactory.create(appModule);
+
+  if (coreConfig.isSwaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle('it-incubator Configuration example')
+      .setDescription('The API description')
+      .setVersion('1.0')
+      .build();
+    const documentFactory = () => SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, documentFactory);
+  }
+
+  console.log('process.env.PORT: ', coreConfig.port);
+  await app.listen(coreConfig.port);
 }
 bootstrap();

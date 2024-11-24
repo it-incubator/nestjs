@@ -1,23 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
+import { CoreConfig } from './core/core.config';
 
-console.log('app.controller.ts process.env.NODE_ENV: ', process.env.NODE_ENV);
-
-@Controller(process.env.NODE_ENV !== 'production' ? 'app' : '')
+@Controller('app')
 export class AppController {
-  constructor() {
-    console.log('AppController: process.env.NAME: ' + process.env.NAME);
-  }
+  constructor(private appConfig: CoreConfig) {}
 
-  @Get('raw-process-env')
-  rawProcessEnv() {
+  @Get('env')
+  async getEnv() {
     return {
-      PORT: process.env.PORT,
-      DB_USER: process.env.DB_USER,
-      NODE_ENV: process.env.NODE_ENV,
-      MONGO_URL: process.env.MONGO_URL,
-      VALUE1: process.env.VALUE1,
-      VALUE2: process.env.VALUE2,
-      HOMEBREW_REPOSITORY: process.env.HOMEBREW_REPOSITORY,
+      PORT: this.appConfig.port,
+      MONGO_URI: this.appConfig.mongoURI,
     };
   }
 }

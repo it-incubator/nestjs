@@ -1,24 +1,23 @@
 {
-  "name": "configuration",
+  "name": "configuration-lesson",
   "version": "0.0.1",
   "description": "",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "docker": "docker-compose up -d",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "cross-env ENV_FILE_PATH=/Users/dzmitrykuziuberdzin/work/it-incubator/edu/back-end/nest-lessons/.env nest start",
-    "start:dev": "cross-env NODE_ENV=DEVELOPMENT nest start --watch",
-    "start:debug": "cross-env NODE_ENV=DEVELOPMENT nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start": "nest start",
+    "start:dev": "cross-env NODE_ENV=development nest start --watch",
+    "start:debug": "cross-env NODE_ENV=development nest start --debug --watch",
+    "start:prod": "cross-env NODE_ENV=production node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:watch": "cross-env NODE_ENV=testing jest --watch",
+    "test:cov": "cross-env NODE_ENV=testing jest --coverage",
+    "test:debug": "NODE_ENV=testing node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "cross-env NODE_ENV=testing jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -26,8 +25,7 @@
     "@nestjs/core": "^10.0.0",
     "@nestjs/mongoose": "^10.1.0",
     "@nestjs/platform-express": "^10.0.0",
-    "@nestjs/swagger": "^8.0.5",
-    "class-transformer": "^0.5.1",
+    "@nestjs/swagger": "^8.0.7",
     "class-validator": "^0.14.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
