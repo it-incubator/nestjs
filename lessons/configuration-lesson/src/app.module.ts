@@ -23,6 +23,7 @@ if (process.env.NODE_ENV === 'testing') {
     PaymentModule,
     UsersModule,
     MongooseModule.forRootAsync({
+      imports: [CoreModule],
       useFactory: (coreConfig: CoreConfig) => {
         return {
           uri: coreConfig.mongoURI,
