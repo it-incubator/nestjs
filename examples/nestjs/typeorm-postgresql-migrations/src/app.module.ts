@@ -4,7 +4,7 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { User } from './db/entities/user.entity';
 import { Profile } from './db/entities/profile.entity';
 import { Photo } from './db/entities/photo.entity';
-import { Album } from './db/entities/album.entity';
+import { Album, AlbumInfo } from './db/entities/album.entity';
 import { AuthModule } from './auth/auth.module';
 import { FinanceModule } from './finance/finance.module';
 import { options } from './db/options';
@@ -15,7 +15,7 @@ import { options } from './db/options';
       ...options,
       autoLoadEntities: true,
     } as TypeOrmModuleOptions),
-    TypeOrmModule.forFeature([User, Profile, Photo, Album]),
+    TypeOrmModule.forFeature([User, Profile, Photo, Album, AlbumInfo]),
     AuthModule,
     FinanceModule,
   ],
