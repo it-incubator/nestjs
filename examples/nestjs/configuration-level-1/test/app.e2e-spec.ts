@@ -1,21 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
-
+import { AppModule } from '../src/app.module';
+import { CoreConfig } from '../src/core/core.config';
+import { NestFactory } from '@nestjs/core';
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+  beforeAll(async () => {
+    // смотри описание в main.ts почему мы именно так инициализируем приложение
+    const appContext = await NestFactory.createApplicationContext(AppModule);
+    const coreConfig = appContext.get<CoreConfig>(CoreConfig);
+    const DynamicAppModule = await AppModule.forRoot(coreConfig);
+
+    const moduleFixture = await Test.createTestingModule({
+      imports: [DynamicAppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    await request(app.getHttpServer())
-      .delete('/testing/all-data');
+    await request(app.getHttpServer()).delete('/testing/all-data').expect(204);
   });
 
   afterAll(async () => {
@@ -37,9 +42,10 @@ describe('AppController (e2e)', () => {
       }),
     );
 
-   const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .get('/users')
       .expect(200);
-      expect(response.body).toHaveLength(1); // Ensure only one user exists
+
+    expect(response.body).toHaveLength(1); // Ensure only one user exists
   });
 });
