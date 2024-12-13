@@ -39,19 +39,19 @@ export class CoreConfig {
     message:
       'Set Env variable IS_SWAGGER_ENABLED to enable/disable Swagger, example: true, available values: true, false',
   })
-  isSwaggerEnabled: boolean = configValidationUtility.convertToBoolean(
+  isSwaggerEnabled = configValidationUtility.convertToBoolean(
     this.configService.get('IS_SWAGGER_ENABLED'),
-  );
+  ) as boolean;
 
   @IsBoolean({
     message:
       'Set Env variable INCLUDE_TESTING_MODULE to enable/disable Dangerous for production TestingModule, example: true, available values: true, false, 0, 1',
   })
-  includeTestingModule: boolean = configValidationUtility.convertToBoolean(
+  includeTestingModule = configValidationUtility.convertToBoolean(
     this.configService.get('INCLUDE_TESTING_MODULE'),
-  );
+  ) as boolean;
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService<any, true>) {
     configValidationUtility.validateConfig(this);
   }
 }
