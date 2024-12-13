@@ -52,6 +52,7 @@ export class CoreConfig {
   );
 
   constructor(private configService: ConfigService) {
+    console.log('CoreConfig created');
     configValidationUtility.validateConfig(this);
   }
 }

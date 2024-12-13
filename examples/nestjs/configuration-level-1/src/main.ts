@@ -13,6 +13,9 @@ async function bootstrap() {
   // и уже потом создаём на основе донастроенного модуля наше приложение
   const app = await NestFactory.create(DynamicAppModule);
 
+  // Закрываем контекст, если он больше не нужен
+  await appContext.close();
+
   // тут же используем управляемую нестом конфигурацию, чтобы включить или выключить swagger
   if (coreConfig.isSwaggerEnabled) {
     const config = new DocumentBuilder()
