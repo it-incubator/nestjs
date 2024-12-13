@@ -11,7 +11,7 @@ export class PaymentConfig {
   })
   paypalSecret: string = this.configService.get('PAYMENT_PAYPAL_SECRET');
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService<any, true>) {
     configValidationUtility.validateConfig(this);
   }
 }

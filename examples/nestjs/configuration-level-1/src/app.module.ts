@@ -37,7 +37,7 @@ export class AppModule {
     // такой мудрёный способ мы используем, чтобы добавить к основным модулям необязательный модуль.
     // чтобы не обращаться в декораторе к переменной окружения через process.env в декораторе, потому что
     // запуск декораторов происходит на этапе склейки всех модулей до старта жизненного цикла самого NestJS
-    const testingModule = [];
+    const testingModule: any[] = [];
     if (coreConfig.includeTestingModule) {
       testingModule.push(TestingModule);
     }

@@ -10,9 +10,9 @@ export class UsersConfig {
   })
   isAutomaticallyConfirmed: boolean = configValidationUtility.convertToBoolean(
     this.configService.get('IS_USER_AUTOMATICALLY_CONFIRMED'),
-  );
+  ) as boolean;
 
-  constructor(private configService: ConfigService) {
+  constructor(private configService: ConfigService<any, true>) {
     configValidationUtility.validateConfig(this);
   }
 }
