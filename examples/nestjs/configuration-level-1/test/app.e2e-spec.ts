@@ -13,6 +13,8 @@ describe('AppController (e2e)', () => {
     const coreConfig = appContext.get<CoreConfig>(CoreConfig);
     const DynamicAppModule = await AppModule.forRoot(coreConfig);
 
+    await appContext.close();
+
     const moduleFixture = await Test.createTestingModule({
       imports: [DynamicAppModule],
     }).compile();
