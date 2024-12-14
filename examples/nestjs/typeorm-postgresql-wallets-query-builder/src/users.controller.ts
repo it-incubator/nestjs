@@ -10,6 +10,7 @@ import { ApiPagination } from './custom-decorators';
 import { plainToInstance } from 'class-transformer';
 import { UserViewModel } from './dto/dto';
 import { ApiQuery } from '@nestjs/swagger';
+import {WalletView} from "./db/entities/wallet.view";
 
 
 @Controller('users')
@@ -18,6 +19,7 @@ export class UsersController {
         @InjectRepository(User) private usersRepo: Repository<User>,
         @InjectRepository(Profile) private profilesRepo: Repository<Profile>,
         @InjectRepository(Wallet) private walletsRepo: Repository<Wallet>,
+        @InjectRepository(WalletView) private walletsViewsRepo: Repository<WalletView>,
         @InjectRepository(WalletSharing) private walletSharingRepo: Repository<WalletSharing>,
         @InjectRepository(WalletSharingLimit) private accountRepo: Repository<WalletSharingLimit>,
         @InjectDataSource() private dataSource: DataSource,
@@ -113,10 +115,12 @@ export class UsersController {
             .createQueryBuilder('u')
             // вместо limit и offset, используем skip и take, потому что в некоторых случаях они могут
             // более хитрый SQL запрос
-            .skip((page - 1) * limit)
+            .skip((page - 1) * limit) // рекомендуем не использолвать, а юзать limit/offset
             .take(limit)
             // эта функция сделат 2 запроса, первый - получит все данные, второй - общее кол-во
             .getManyAndCount();
+
+        console.log(users[0] instanceof User)
 
         return {
             data: users,
@@ -135,7 +139,7 @@ export class UsersController {
     ) {
         const [users, total] = await this.usersRepo
           .createQueryBuilder('u')
-          .leftJoinAndSelect('u.wallets', 'w')
+          .leftJoinAndSelect('u.wallets', 'w') // when use select we can use leftJoin instead of leftJoinAndSelect
           .select(['u.id','u.firstName', 'w.id', 'w.balance' ])
           .skip((page - 1) * limit)
           .take(limit)
@@ -160,7 +164,7 @@ export class UsersController {
     ) {
         const users = await this.usersRepo
           .createQueryBuilder('u')
-          .select(['id', 'first_name', 'last_name'])
+          .select(['id', '"firstName"', 'u.lastName'])
           .skip((page - 1) * limit)
           .take(limit)
           .getRawMany();
@@ -169,6 +173,7 @@ export class UsersController {
     }
 
 
+    // не заострять на этом примере внимание
     @Get('users-entities-raw-with-transformation')
     @ApiPagination()
     async usersEntitiesWithTransformation(
@@ -253,6 +258,9 @@ export class UsersController {
             .take(limit)
             .getMany();
 
+        console.log("isMarried: ", users[0].isMarried)
+        console.log("hasOwnProperty: ", users[0].hasOwnProperty('isMarried'))
+
         let total = 10;
         return {
             data: users,
@@ -293,8 +301,16 @@ export class UsersController {
     async walletsWithRowNumberByOwnerId() {
         const wallets = await this.walletsRepo
             .createQueryBuilder('w')
-            .select(['currency', 'added_at as "addedAt"', 'CAST(ROW_NUMBER() OVER (PARTITION BY w.owner_id ORDER BY w.added_at) as INT) AS walletNumber'])
+            .select(['w.currency as currency', 'w.addedAt as "addedAt"', 'CAST(ROW_NUMBER() OVER (PARTITION BY w.ownerId ORDER BY w.addedAt) as INT) AS "walletNumber"'])
             .getRawMany()
+        return wallets;
+    }
+
+    @Get('wallets-with-row-number-from-view')
+    async walletsWithRowNumberByOwnerIdFromView() {
+        const wallets = await this.walletsViewsRepo
+            .createQueryBuilder('w')
+            .getMany()
         return wallets;
     }
 

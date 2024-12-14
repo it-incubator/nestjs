@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
 import {User} from "./user.entity";
 import {WalletSharing} from "./wallet-sharing.entity";
 
@@ -25,3 +25,6 @@ export class Wallet {
   @OneToMany(() => WalletSharing, (walletSharing) => walletSharing.wallet)
   walletSharings: WalletSharing[];
 }
+
+
+

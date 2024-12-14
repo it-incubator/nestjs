@@ -5,11 +5,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const config = new DocumentBuilder()
-    .setTitle('TypeORM example!')
-    .setDescription('it-incubator.io TypeOrm')
-    .setVersion('1.0')
-    .build();
+  let documentBuilder = new DocumentBuilder();
+
+  documentBuilder
+      .setTitle('TypeORM example!')
+      .setDescription('it-incubator.io TypeOrm')
+      .setVersion('1.0');
+
+  const config = documentBuilder.build();
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
@@ -18,3 +22,6 @@ async function bootstrap() {
   });
 }
 bootstrap();
+
+
+

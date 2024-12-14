@@ -5,8 +5,9 @@ import { User } from './db/entities/user.entity';
 import { Profile } from './db/entities/profile.entity';
 import { WalletSharing } from './db/entities/wallet-sharing.entity';
 import { WalletSharingLimit } from './db/entities/wallet-sharing-limit.entity';
-import { Wallet } from './db/entities/wallet.entity';
+import {Wallet} from './db/entities/wallet.entity';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import {WalletView} from "./db/entities/wallet.view";
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
       logging: true,
      // namingStrategy: new SnakeNamingStrategy()
     }),
-    TypeOrmModule.forFeature([User, Profile, Wallet, WalletSharing, WalletSharingLimit]),
+    TypeOrmModule.forFeature([User, Profile, Wallet, WalletSharing, WalletSharingLimit, WalletView]),
   ],
   controllers: [UsersController],
   providers: [],
