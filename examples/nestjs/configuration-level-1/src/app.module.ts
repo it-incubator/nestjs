@@ -1,5 +1,5 @@
 // import of this config module must be on the top of imports
-import { configModule } from './config-dynamic-module';
+import { configModule } from './dynamic-config-module';
 import { DynamicModule, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TestingModule } from './features/testing/testing.module';
@@ -37,14 +37,14 @@ export class AppModule {
     // такой мудрёный способ мы используем, чтобы добавить к основным модулям необязательный модуль.
     // чтобы не обращаться в декораторе к переменной окружения через process.env в декораторе, потому что
     // запуск декораторов происходит на этапе склейки всех модулей до старта жизненного цикла самого NestJS
-    const testingModule: any[] = [];
+    const additionalModules: any[] = [];
     if (coreConfig.includeTestingModule) {
-      testingModule.push(TestingModule);
+      additionalModules.push(TestingModule);
     }
 
     return {
       module: AppModule,
-      imports: testingModule, // Add dynamic modules here
+      imports: additionalModules, // Add dynamic modules here
     };
   }
 }
