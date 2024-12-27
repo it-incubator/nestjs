@@ -61,3 +61,5 @@ services:
       - postgres_primary  # Указываем зависимость от мастера.
 
 
+## Повысить slave до master
+## pg_ctl promote -D /var/lib/postgresql/data

@@ -1,4 +1,4 @@
-import { pgTable, integer, varchar, uuid, foreignKey, char, timestamp, date, smallint, serial, boolean } from "drizzle-orm/pg-core"
+import { pgTable, integer, varchar, uuid, serial, boolean, foreignKey, char, timestamp, date, smallint } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -14,6 +14,14 @@ export const walletSharingLimit = pgTable("wallet_sharing_limit", {
 	limitPerDay: integer(),
 	limitPerWeek: integer(),
 	limitPerMonth: integer(),
+});
+
+export const user = pgTable("user", {
+	id: serial().primaryKey().notNull(),
+	firstName: varchar(),
+	lastName: varchar(),
+	passportNumber: varchar(),
+	isMarried: boolean(),
 });
 
 export const wallet = pgTable("wallet", {
@@ -33,7 +41,7 @@ export const wallet = pgTable("wallet", {
 
 export const walletSharing = pgTable("wallet_sharing", {
 	id: uuid().primaryKey().notNull(),
-	addedDate: date().notNull().default(sql`now()`),
+	addedDate: date().defaultNow().notNull(),
 	status: smallint(),
 	walletId: uuid(),
 	userId: integer(),
@@ -49,11 +57,3 @@ export const walletSharing = pgTable("wallet_sharing", {
 			name: "FK_df5c10e16fc947b0e693f8335d5"
 		}),
 ]);
-
-export const user = pgTable("user", {
-	id: serial().primaryKey().notNull(),
-	firstName: varchar(),
-	lastName: varchar(),
-	passportNumber: varchar(),
-	isMarried: boolean(),
-});

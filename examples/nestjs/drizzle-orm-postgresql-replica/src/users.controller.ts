@@ -7,7 +7,7 @@ import {asc, count} from "drizzle-orm";
 
 @Controller('users')
 export class UsersController {
-    maxLimit = 5;
+    maxLimit = 20;
 
     constructor(
         private readonly dataSource: DbService
@@ -68,7 +68,7 @@ export class UsersController {
                             id: randomUUID(),
                             walletId: walletRes.id,
                             userId: userResult.id,
-                            addedDate: new Date(),
+                            addedDate: new Date().toISOString(),
                             status: k % 2 === 0 ? 1 : 0,
                         }
 
@@ -98,7 +98,7 @@ export class UsersController {
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 10
     ) {
-        const users = this.dataSource
+        const users = await this.dataSource
             .readDb
             .select({
                 id: user.id,
@@ -110,17 +110,21 @@ export class UsersController {
             .from(user)
             .orderBy(asc(user.id))
             .offset((page - 1) * limit)
-            .limit(limit)
+            .limit(limit).execute()
+
+        console.log(users)
 
         const [{total}] = await this.dataSource
             .readDb
             .select({
                 total: count()
             })
-            .from(user)
+            .from(user).execute()
+
+        console.log(total)
 
         return {
-            data: await users,
+            data: users,
             total: total,
             page,
             limit,

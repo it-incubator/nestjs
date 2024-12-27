@@ -1,25 +1,40 @@
 import {Injectable, OnModuleInit} from '@nestjs/common';
 
-import {drizzle, NodePgDatabase} from 'drizzle-orm/node-postgres';
+import {drizzle, PostgresJsDatabase} from 'drizzle-orm/postgres-js';
 import * as schema from '../../drizzle/schema';
 import {withReplicas} from "drizzle-orm/pg-core";
+import * as postgres from "postgres";
+
+const clientWrite = postgres("postgresql://localhost:5435,localhost:5434/postgres", {
+    target_session_attrs: 'read-write',
+    username: "user",
+    password: 'password'
+})
+const clientRead = postgres("postgresql://localhost:5435,localhost:5434/postgres", {
+    username: "user",
+    password: 'password',
+    target_session_attrs: 'prefer-standby',
+})
 
 @Injectable()
 export class DbService implements OnModuleInit {
-    private _db: NodePgDatabase<typeof schema>;
-    private _primaryDb: NodePgDatabase<typeof schema>;
-    private _readDb: NodePgDatabase<typeof schema>;
+    private _db: PostgresJsDatabase<typeof schema>;
+    private _primaryDb: PostgresJsDatabase<typeof schema>;
+    private _readDb: PostgresJsDatabase<typeof schema>;
 
     async onModuleInit() {
         try {
-            this._primaryDb = drizzle("postgresql://user:password@localhost:5435/postgres", {
+            this._primaryDb = drizzle({
                 schema,
                 logger: true,
+                client: clientWrite,
             });
 
-            this._readDb = drizzle("postgresql://user:password@localhost:5434/postgres", {
+
+            this._readDb = drizzle({
                 schema,
                 logger: true,
+                client: clientRead
             });
 
             this._db = withReplicas(this._db, [this._readDb]);
