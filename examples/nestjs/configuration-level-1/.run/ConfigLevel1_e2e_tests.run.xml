@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ConfigLevel1_e2e_tests" type="JavaScriptTestRunnerJest">
+    <node-interpreter value="project" />
+    <jest-package value="$PROJECT_DIR$/examples/nestjs/configuration-level-1/node_modules/jest" />
+    <working-dir value="$PROJECT_DIR$/examples/nestjs/configuration-level-1" />
+    <jest-options value=" jest --config ./test/jest-e2e.json" />
+    <envs>
+      <env name="NODE_ENV" value="testing" />
+    </envs>
+    <scope-kind value="ALL" />
+    <method v="2" />
+  </configuration>
+</component>

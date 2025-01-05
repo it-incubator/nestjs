@@ -4,6 +4,8 @@ import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { CoreConfig } from '../src/core/core.config';
 import { NestFactory } from '@nestjs/core';
+import { UsersConfig } from '../src/features/users/config/users.config';
+
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
@@ -15,9 +17,16 @@ describe('AppController (e2e)', () => {
 
     await appContext.close();
 
+    class TestUserConfig extends UsersConfig {
+      isAutomaticallyConfirmed: boolean = true;
+    }
+
     const moduleFixture = await Test.createTestingModule({
       imports: [DynamicAppModule],
-    }).compile();
+    })
+      .overrideProvider(UsersConfig)
+      .useClass(TestUserConfig)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -40,7 +49,7 @@ describe('AppController (e2e)', () => {
         _id: expect.any(String),
         login: 'testUser',
         email: 'test1@email.com',
-        isConfirmed: false,
+        isConfirmed: true,
       }),
     );
 
