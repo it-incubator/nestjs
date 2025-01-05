@@ -1,10 +1,15 @@
+import { IsOptional, Max, Min } from 'class-validator';
+
 export class CreateCatInputDTO {
   name: string;
   dob: Date;
-  price: number;
+  @Min(10)
+  @Max(100)
+  @IsOptional()
+  price?: number;
   /**
-   * A list of cats types
-   * @example ['toy']
+   * cat type
+   * @example 'toy'
    */
   type: CatType;
 }

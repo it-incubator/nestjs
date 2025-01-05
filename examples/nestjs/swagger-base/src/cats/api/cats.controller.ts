@@ -1,13 +1,16 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { CatViewDTO } from './dto/cat.view.dto';
-import { CreateCatInputDTO } from './dto/create-cat.input.dto';
-import { GetCatsQueryDTO } from './dto/get-cats.query.dto';
+import { CatViewDTO } from '../dto/cat.view.dto';
+import { CreateCatInputDTO } from '../dto/create-cat.input.dto';
+import { GetCatsQueryDTO } from '../dto/get-cats.query.dto';
+import { ApiBasicAuth, ApiBearerAuth } from '@nestjs/swagger';
+import { CatService } from '../application/cat.service';
 
 /**
  * Работа с котами для юзеров с авторизацией и без
  */
 @Controller('cats')
 export class CatsController {
+  constructor(private catService: CatService) {}
   /**
    * Ищем котов.
    * @throws {400} Bad Request
@@ -21,12 +24,14 @@ export class CatsController {
    *
    * @remarks This operation allows you to create a new cat.
    *
+   * @returns {201} The cat has been successfully created.
    * @throws {500} Something went wrong.
    * @throws {400} Bad Request.
    */
   @Post()
+  @ApiBearerAuth()
   async create(@Body() dto: CreateCatInputDTO): Promise<CatViewDTO> {
-    return { id: '1', dob: dto.dob, name: dto.name, price: dto.price };
+    return this.catService.create(dto);
   }
 
   /**
@@ -39,6 +44,7 @@ export class CatsController {
    * @throws {400} Bad Request.
    */
   @Post('create')
+  @ApiBasicAuth()
   async oldCreate(@Body() dto: CreateCatInputDTO): Promise<CatViewDTO> {
     return { id: '1', dob: dto.dob, name: dto.name, price: dto.price };
   }
