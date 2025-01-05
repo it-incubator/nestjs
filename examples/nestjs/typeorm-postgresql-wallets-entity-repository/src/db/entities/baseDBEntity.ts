@@ -20,7 +20,7 @@ export class BaseDBEntity {
   public updatedAt: Date;
 
   @DeleteDateColumn()
-  public deletedAt: Date;
+  public deletedAt: Date | null;
 
   @VersionColumn()
   public version: number;

@@ -2,9 +2,10 @@ import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { User } from './user.entity';
 import { WalletSharing } from './wallet-sharing.entity';
 import { BaseDBEntity } from './baseDBEntity';
+import {InputWalletDto} from "../../example3-base-entity-special-columns/dto";
 
 @Entity()
-export class Wallet  extends BaseDBEntity {
+export class Wallet extends BaseDBEntity {
   @Column({ type: 'varchar', nullable: true })
   title: string;
 
@@ -24,4 +25,22 @@ export class Wallet  extends BaseDBEntity {
 
   //@OneToMany(() => WalletSharing, (walletSharing) => walletSharing.wallet)
   //walletSharings: WalletSharing[];
+
+  /**
+   * Static factory method;
+   * Фабричный статический метод фактически это более наворочення версия конструктора.
+   * @param dto
+   */
+  static create(dto: InputWalletDto): Wallet {
+    const bonus = 100;
+
+    const wallet = new Wallet();
+
+    wallet.balance = dto.balance + bonus;
+    wallet.title = dto.title;
+    wallet.currency = dto.currency;
+    wallet.owner = {id: dto.ownerId} as User;
+
+    return wallet;
+  }
 }

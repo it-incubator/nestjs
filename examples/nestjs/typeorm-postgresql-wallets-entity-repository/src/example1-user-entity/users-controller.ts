@@ -10,11 +10,6 @@ import { Wallet } from '../db/entities/wallet.entity';
 export class UsersController {
     constructor(
         @InjectRepository(User) private usersRepo: Repository<User>,
-         @InjectRepository(Profile) private profilesRepo: Repository<Profile>,
-         @InjectRepository(Wallet) private walletsRepo: Repository<Wallet>,
-        // @InjectRepository(WalletSharing) private walletSharingRepo: Repository<WalletSharing>,
-        // @InjectRepository(WalletSharingLimit) private accountRepo: Repository<WalletSharingLimit>,
-        // @InjectDataSource() private dataSource: DataSource,
     ) {
     }
 
@@ -36,11 +31,14 @@ export class UsersController {
     @Post()
     async createUser(@Body() createUserDto: InputUserDto): Promise<User> {
         const userAggregate: User = User.create(createUserDto)
-         await this.usersRepo.save(userAggregate);
-          userAggregate.profile.user = userAggregate;
-         // user.wallets.forEach(w => w.user = user)
-         await this.profilesRepo.save(userAggregate.profile);
-         await this.walletsRepo.save(userAggregate.wallets);
+        // с cascade: true мы можем создать только юзера, а все зависимые сущности в других таблицах создадутся автоматически
+        await this.usersRepo.save(userAggregate);
+
+        // с cascade: false мы должны с каждой сущностью работать по отдельности.
+        // userAggregate.profile.user = userAggregate;
+        // user.wallets.forEach(w => w.user = user)
+        // await this.profilesRepo.save(userAggregate.profile);
+        // await this.walletsRepo.save(userAggregate.wallets);
         return userAggregate;
     }
 

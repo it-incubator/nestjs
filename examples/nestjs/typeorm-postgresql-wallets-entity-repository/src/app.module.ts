@@ -24,7 +24,7 @@ import { WalletsController } from './example3-base-entity-special-columns/wallet
     }),
     TypeOrmModule.forFeature([User, Profile, Wallet]),//, Profile, Wallet, WalletSharing, WalletSharingLimit]),
   ],
-  controllers: [UsersController, ProfilesController],//, ProfilesController, WalletsController],
+  controllers: [UsersController, ProfilesController, WalletsController],
   providers: [],
 })
 export class AppModule {}

@@ -3,6 +3,8 @@ import {Profile} from "./profile.entity";
 import {Wallet} from "./wallet.entity";
 import {WalletSharing} from "./wallet-sharing.entity";
 import { BaseDBEntity } from './baseDBEntity';
+import {InputWalletDto} from "../../example3-base-entity-special-columns/dto";
+import {ForbiddenException} from "@nestjs/common";
 
 @Entity()
 export class User extends BaseDBEntity{
@@ -38,6 +40,7 @@ export class User extends BaseDBEntity{
 
   static create(dto: any) {
     const user = new User();
+
     user.firstName = dto.firstName;
     user.lastName = dto.lastName;
     user.status = 'not-confirmed';
@@ -49,6 +52,7 @@ export class User extends BaseDBEntity{
       education: 'it-incubator',
       user: user
     } as Profile
+
     user.wallets = [
       {
         title: 'Main wallet',
@@ -64,17 +68,27 @@ export class User extends BaseDBEntity{
 
   // точно хотим засорять юзера профилем?
   @OneToOne(() => Profile, (profile) => profile.user, {
-    cascade: true
+    cascade: true // благодаря этому мы можем сохраняя юзера применить изменения и на данную сущность
   })
   profile: Profile;
 
   // точно хотим засорять юзера кошельками?
   @OneToMany(() => Wallet, (wallet) => wallet.owner, {
-    cascade: true
+    cascade: true // благодаря этому мы можем сохраняя юзера применить изменения и на данную сущность
   })
   wallets: Wallet[];
 
   // точно хотим засорять юзера кошельками?
   // @OneToMany(() => WalletSharing, (walletSharing) => walletSharing.user)
   // walletSharings: WalletSharing[];
+  addNewWallet(createWalletDto: InputWalletDto) {
+    // this.wallets = [];
+    if (this.wallets.some(w => w.balance < 0)) {
+      throw new ForbiddenException('User has negative balance and cannot create a new wallet');
+    }
+
+    const wallet = Wallet.create(createWalletDto)
+    this.wallets.push(wallet)
+    return wallet;
+  }
 }
