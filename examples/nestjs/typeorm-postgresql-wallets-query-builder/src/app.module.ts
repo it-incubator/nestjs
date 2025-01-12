@@ -6,7 +6,6 @@ import { Profile } from './db/entities/profile.entity';
 import { WalletSharing } from './db/entities/wallet-sharing.entity';
 import { WalletSharingLimit } from './db/entities/wallet-sharing-limit.entity';
 import {Wallet} from './db/entities/wallet.entity';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import {WalletView} from "./db/entities/wallet.view";
 
 @Module({
@@ -17,12 +16,10 @@ import {WalletView} from "./db/entities/wallet.view";
       port: 5433,
       username: 'postgres',
       password: 'it-incubator.io',
-     // database: 'BankSystemTypeOrmCamecase',
-      database: 'BankSystemTypeOrm', // snake_case
+      database: 'BankSystemTypeOrm',
       autoLoadEntities: true,
       synchronize: true,
       logging: true,
-     // namingStrategy: new SnakeNamingStrategy()
     }),
     TypeOrmModule.forFeature([User, Profile, Wallet, WalletSharing, WalletSharingLimit, WalletView]),
   ],
