@@ -6,7 +6,11 @@ export const configValidationUtility = {
     const errors = validateSync(configInstance);
     if (errors.length > 0) {
       const sortedMessages = errors
-        .map((error) => Object.values(error.constraints || {}).join(', '))
+        .map((error) => {
+          const currentValue = error.value;
+          const constraints = Object.values(error.constraints || {}).join(', ');
+          return `${constraints} (current value: ${currentValue})`;
+        })
         .join('; ');
       throw new Error('Validation failed: ' + sortedMessages);
     }
