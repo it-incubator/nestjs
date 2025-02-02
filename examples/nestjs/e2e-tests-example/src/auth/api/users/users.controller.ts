@@ -9,13 +9,15 @@ import {
 } from '@nestjs/common';
 import { UsersService } from '../../application/users/users.service';
 import { User } from '../../entities/user.entity';
+import { CreateUserDTO } from '../../dto/create-user.dto';
+import { UpdateUserDTO } from '../../dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
 
   @Post()
-  async create(@Body() user: User) {
+  async create(@Body() user: CreateUserDTO) {
     return this.userService.create(user);
   }
 
@@ -30,7 +32,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() user: User) {
+  async update(@Param('id') id: string, @Body() user: UpdateUserDTO) {
     return this.userService.update(id, user);
   }
 

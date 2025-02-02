@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { OrdersModule } from './orders/orders.module';
 import { AuthModule } from './auth/auth.module';
+import { CommonModule } from './common/common.module';
 
 console.log('process.env.MONGODB_URI: ', process.env.MONGODB_URI);
 console.log('process.env.NODE_ENV: ', process.env.NODE_ENV);
@@ -15,6 +16,7 @@ console.log('process.env.NODE_ENV: ', process.env.NODE_ENV);
     MongooseModule.forRoot(process.env.MONGODB_URI),
     OrdersModule,
     AuthModule,
+    CommonModule,
   ],
   controllers: [AppController],
   providers: [AppService],

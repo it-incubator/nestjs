@@ -16,6 +16,6 @@ import { User, UserSchema } from './entities/user.entity';
   ],
   controllers: [UsersController, AuthController],
   providers: [UsersService],
-  exports: [JwtModule], // Реэкспорт JwtModule
+  exports: [JwtModule, MongooseModule], // Реэкспорт JwtModule
 })
 export class AuthModule {}

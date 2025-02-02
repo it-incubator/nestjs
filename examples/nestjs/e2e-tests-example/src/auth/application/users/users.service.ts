@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../../entities/user.entity';
+import { CreateUserDTO } from '../../dto/create-user.dto';
+import { UpdateUserDTO } from '../../dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -9,7 +11,7 @@ export class UsersService {
     @InjectModel(User.name) private readonly userModel: Model<User>,
   ) {}
 
-  async create(userDto: Partial<User>): Promise<User> {
+  async create(userDto: Partial<CreateUserDTO>): Promise<User> {
     return this.userModel.create(userDto);
   }
 
@@ -21,7 +23,7 @@ export class UsersService {
     return this.userModel.findById(id).exec();
   }
 
-  async update(id: string, userDto: Partial<User>): Promise<User> {
+  async update(id: string, userDto: Partial<UpdateUserDTO>): Promise<User> {
     return this.userModel.findByIdAndUpdate(id, userDto, { new: true }).exec();
   }
 

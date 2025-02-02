@@ -4,6 +4,14 @@ import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
+import { MailService } from '../../src/common/services/mail.service';
+import { setupApp } from '../../src/config/setup-app';
+
+class MockMailService {
+  send(to: string, subject: string, body: string) {
+    console.log(`EMAIL NOT SENT FOR TEST`);
+  }
+}
 
 describe('OrdersController (e2e)', () => {
   let app: INestApplication;
@@ -16,9 +24,15 @@ describe('OrdersController (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(MailService)
+      .useClass(MockMailService)
+      .compile();
 
     app = moduleFixture.createNestApplication();
+
+    setupApp(app);
+
     await app.init();
 
     connection = moduleFixture.get<Connection>(getConnectionToken());
@@ -29,9 +43,12 @@ describe('OrdersController (e2e)', () => {
     }
 
     // Создание пользователей
+    // Создание пользователей
     const userResponse = await request(app.getHttpServer())
       .post('/users')
-      .send({ name: 'Test User', email: 'test@example.com', isActive: true });
+      .send({ name: 'Test User', email: 'test@example.com', isActive: true })
+      .expect(201);
+
     createdUserId = userResponse.body._id;
 
     const anotherUserResponse = await request(app.getHttpServer())
@@ -40,7 +57,9 @@ describe('OrdersController (e2e)', () => {
         name: 'Another User',
         email: 'another@example.com',
         isActive: true,
-      });
+      })
+      .expect(201);
+
     anotherUserId = anotherUserResponse.body._id;
 
     // Логинизация пользователей
@@ -117,5 +136,25 @@ describe('OrdersController (e2e)', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.product).toBe('Updated Product');
+  });
+
+  it('/orders/:id (PATCH) should return 400 when sending invalid data', async () => {
+    const orderResponse = await request(app.getHttpServer())
+      .post('/orders')
+      .send({
+        orderId: '999',
+        product: 'Invalid Order',
+        orderDate: new Date(),
+        userId: createdUserId,
+      })
+      .expect(201);
+
+    const orderId = orderResponse.body._id;
+
+    await request(app.getHttpServer())
+      .patch(`/orders/${orderId}`)
+      .set('Authorization', `Bearer ${createdUserAccessToken}`)
+      .send({ orderDate: 'invalid-date' }) // Некорректный формат даты
+      .expect(400);
   });
 });

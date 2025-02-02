@@ -9,16 +9,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { OrdersService } from '../../application/orders/orders.service';
-import { Order } from '../../entities/order.entity';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { UserId } from '../../../auth/decorators/user-id.decorator';
+import { CreateOrderDTO } from '../../dto/create-order.dto';
+import { UpdateOrderDTO } from '../../dto/update-order.dto';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly orderService: OrdersService) {}
 
   @Post()
-  async create(@Body() order: Order) {
+  async create(@Body() order: CreateOrderDTO) {
     return this.orderService.create(order);
   }
 
@@ -36,7 +37,7 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   async updateOrder(
     @Param('id') id: string,
-    @Body() orderDto: Partial<Order>,
+    @Body() orderDto: UpdateOrderDTO,
     @UserId() userId: string,
   ) {
     return this.orderService.update(id, orderDto, userId);
