@@ -1,0 +1,10 @@
+services:
+  learning-postgres-index:
+    image: postgres:16
+    container_name: learning-postgres-index
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: it-incubator.io
+      POSTGRES_DB: TypeOrmIndexesLesson
+    ports:
+      - "5442:5432"

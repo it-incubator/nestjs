@@ -1,47 +1,33 @@
-import {
-  Check,
-  Column,
-  Entity,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
-import { Profile } from './profile.entity';
+import {Column, Entity, Index, PrimaryGeneratedColumn} from "typeorm";
 
 @Entity()
+@Index()
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  @ApiProperty()
-  name: string;
+  firstName: string;
+
+  @Column()
+  lastName: string;
 
   @Column({
     nullable: true,
   })
-  @ApiProperty()
+  @Index({unique: true})
   email: string | null;
 
   @Column({
     default: 10,
   })
+  // @Index()
   balance: number;
 
-  @OneToOne(() => Profile, (profile) => profile.owner, { cascade: true })
-  profile: Profile;
+  @Column()
+  @Index({unique: true})
+  login: string;
 
-  setName(newName: string) {
-    const namesParts = newName.split(' ');
-    if (namesParts.length < 2) throw Error('Incorrect name');
-
-    this.name = newName;
-  }
-
-  setAddress(newAddress) {
-    const userIdVIP = true;
-    if (userIdVIP) {
-      this.profile.address = newAddress;
-    }
-  }
+  @Column()
+  dob: Date;
 }
