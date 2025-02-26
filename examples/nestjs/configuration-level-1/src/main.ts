@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CoreConfig } from './core/core.config';
 
 async function bootstrap() {
+  debugger;
   // из-за того, что нам нужно донастроить динамический AppModule, мы не можем сразу создавать приложение
   // а создаём сначала контекст
   const appContext = await NestFactory.createApplicationContext(AppModule);
