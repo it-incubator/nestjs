@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блокирующий цикл</title>
+</head>
+<body>
+
+<script>
+
+    var count = 0;
+    var interval = setInterval(() => {
+        console.log("start: " + count);
+        count++;
+        if (count > 3) {
+            clearInterval(interval);
+        }
+        const start = Date.now();
+        while (Date.now() - start < 10000) {
+            // Блокирующий цикл (5 секунд)
+        }
+        console.log("finish: " + count);
+
+    }, 5000)
+
+    // - label1. я добавил в очередь первый обработчик [tickHandler1] currentTime=1000
+    // - run tickHandler1 [] currentTime=1000 to 5000 (запускаю таймер чтобы второй обработчик через 1 секунду добавить)
+    // - я должен добавить в очередь обработчик, но так как предыдущий ещё работает.. я перестаю вовсе считать,
+    //       а handler2 отправлю в очередь сразу когда handler1 закончит работу currentTime=2000
+    // - я забил болт я не считаю currentTime=3000
+    // - я забил болт я не считаю currentTime=4000
+    // - я забил болт я не считаю currentTime=5000
+    // - tickHandler1 выполнился.. поэтому handler2 засовываю и опят считаю currentTime=6000
+    // - goto: label1
+</script>
+</body>
+</html>
