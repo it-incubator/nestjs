@@ -66,6 +66,8 @@ export class UsersController {
             owner: user,
             balance: j,
             addedAt: new Date(Date.now() + j * oneDay),
+            deletedAt: new Date(Date.now() + j * oneDay),
+            lastTransactionAt: new Date(Date.now() + j * oneDay),
           });
 
           for (let k = 1; k <= 5; k++) {
@@ -109,7 +111,7 @@ export class UsersController {
     const [users, total] = await this.usersRepo
       // так как билдер строим на основе сущности User, то и таблица будет users,
       // необходимо указать только alias 'u'
-      .createQueryBuilder("u")
+      .createQueryBuilder()
       // вместо limit и offset, используем skip и take, потому что в некоторых случаях они могут
       // более хитрый SQL запрос
       .skip((page - 1) * limit) // рекомендуем не использолвать, а юзать limit/offset
@@ -159,7 +161,11 @@ export class UsersController {
   ) {
     const users = await this.usersRepo
       .createQueryBuilder("u")
-      .select(["id", '"firstName"', "u.lastName"])
+      .select([
+        "id",
+        'u.firstName as "userFirstName"',
+        'u.lastName as "userLastName"',
+      ])
       .skip((page - 1) * limit)
       .take(limit)
       .getRawMany();
@@ -167,7 +173,7 @@ export class UsersController {
     return users;
   }
 
-  // не заострять на этом примере внимание
+  // не заострять на этом примере внимание (примерно то что просходит под капотом)
   @Get("users-entities-raw-with-transformation")
   @ApiPagination()
   async usersEntitiesWithTransformation(
@@ -196,7 +202,11 @@ export class UsersController {
   ) {
     const users = await this.usersRepo
       .createQueryBuilder("u")
-      .select(["id", '"firstName"', '"lastName"'])
+      .select([
+        'id as "id"',
+        'u.firstName as "firstName"',
+        'u.lastName as "lastName"',
+      ])
       .skip((page - 1) * limit)
       .take(limit)
       .getRawMany();
@@ -266,17 +276,30 @@ export class UsersController {
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ) {
-    const [users, total] = await this.usersRepo
-      .createQueryBuilder("u")
-      .leftJoinAndSelect("u.wallets", "w")
-      .skip((page - 1) * limit)
-      .take(limit)
-      // в этом случае пагинация будет работать некорректно, и будет пагинировать
-      // не по юзерам, а по юзер + кошелек, а юзеров будет очень много, так как мноо кошельков у каждого юзера
-      //.offset((page - 1) * limit)
-      //.limit(limit)
-      .getManyAndCount();
 
+    const users = await this.usersRepo
+        .createQueryBuilder("u")
+        .leftJoinAndMapMany(
+            "u.wallets",
+            "u.wallets",
+            "w"
+        )
+        .select(["u.id", 'w.id', "w.balance", "w.title"])
+        .getMany();
+
+
+    // const users = await this.usersRepo
+    //   .createQueryBuilder("u")
+    //   .select(['u.id as "id"', 'w.balance as "balance"'])
+    //   .leftJoin("u.wallets", "w")
+    //   .skip((page - 1) * limit)
+    //   .take(limit)
+    //   // в этом случае пагинация будет работать некорректно, и будет пагинировать
+    //   // не по юзерам, а по юзер + кошелек, а юзеров будет очень много, так как мноо кошельков у каждого юзера
+    //   //.offset((page - 1) * limit)
+    //   //.limit(limit)
+    //   .getRawMany();
+    const total = 10;
     return {
       data: users,
       total,
@@ -450,7 +473,7 @@ export class UsersController {
       .addSelect(
         `COALESCE(
                 jsonb_agg(
-                       json_build_object('id', w.id, 'balance', w.balance, 'currency', w.currency)
+                       json_build_object('id', w.id, 'balance', w.balance, 'currency', w.currency, 'addedAt', w."addedAt", 'deletedAt', w."deletedAt")
                     ) FILTER (WHERE w.id IS NOT NULL),
                 '[]')  
                 as wallets`,
@@ -759,7 +782,7 @@ export class UsersController {
     const top_3_wallets_queryBuilder = this.usersRepo
       .createQueryBuilder("u")
       .select("u.id as user_id")
-        .addSelect('owner_with_top3_wallet_table.top_wallets')
+      .addSelect("owner_with_top3_wallet_table.top_wallets")
       .leftJoin(
         "owner_with_top3_wallet_table",
         "owner_with_top3_wallet_table",

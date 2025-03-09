@@ -13,10 +13,10 @@ import {WalletView} from "./db/entities/wallet.view";
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5433,
-      username: 'postgres',
+      port: 5532,
+      username: 'dimych',
       password: 'it-incubator.io',
-      database: 'BankSystemTypeOrm',
+      database: 'query_builder',
       autoLoadEntities: true,
       synchronize: true,
       logging: true,

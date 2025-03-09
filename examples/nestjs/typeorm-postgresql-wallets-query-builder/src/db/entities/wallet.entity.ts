@@ -19,6 +19,12 @@ export class Wallet {
   @Column()
   addedAt: Date;
 
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  deletedAt: Date | null
+
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' }) // Use timestamptz
+  lastTransactionAt: Date | null
+
   @ManyToOne(() => User, (user) => user.wallets)
   owner: User;
 
