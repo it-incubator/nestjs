@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
-import { User } from './user.entity';
+import { Client } from './user.entity';
 import { WalletSharing } from './wallet-sharing.entity';
 import { BaseDBEntity } from './baseDBEntity';
 import {InputWalletDto} from "../../example3-base-entity-special-columns/dto";
@@ -18,10 +18,10 @@ export class Wallet extends BaseDBEntity {
   // если решим засорить юзера кошельками, то делаем навигационное обратное св-во
   // @ManyToOne(() => User, (user) => user.wallets)
   // If you only care about the @ManyToOne relationship, you can define it without having @OneToMany on the related entity.
-  @ManyToOne(() => User, null, {
+  @ManyToOne(() => Client, null, {
     nullable: false
   })
-  owner: User;
+  owner: Client;
 
   //@OneToMany(() => WalletSharing, (walletSharing) => walletSharing.wallet)
   //walletSharings: WalletSharing[];
@@ -39,7 +39,7 @@ export class Wallet extends BaseDBEntity {
     wallet.balance = dto.balance + bonus;
     wallet.title = dto.title;
     wallet.currency = dto.currency;
-    wallet.owner = {id: dto.ownerId} as User;
+    wallet.owner = {id: dto.ownerId} as Client;
 
     return wallet;
   }

@@ -7,7 +7,7 @@ import {InputWalletDto} from "../../example3-base-entity-special-columns/dto";
 import {ForbiddenException} from "@nestjs/common";
 
 @Entity()
-export class User extends BaseDBEntity{
+export class Client extends BaseDBEntity{
   @Column()
   firstName: string;
 
@@ -36,38 +36,41 @@ export class User extends BaseDBEntity{
 
     this.passportNumber = dto.passportNumber;
     this.isMarried = dto.isMarried;
+
+    if (dto.status === 'vacation')
+      if (this.wallets.some(w => w.balance < 0)) {
+          throw Error('Client can go to vacation because has dept');
+      }
   }
 
   static create(dto: any) {
-    const user = new User();
+    const client = new Client();
 
-    user.firstName = dto.firstName;
-    user.lastName = dto.lastName;
-    user.status = 'not-confirmed';
-    user.isMarried = dto.isMarried;
-    user.dob = new Date(2000, 10, 1);
+    client.firstName = dto.firstName;
+    client.lastName = dto.lastName;
+    client.status = 'not-confirmed';
+    client.isMarried = dto.isMarried;
+    client.dob = new Date(2000, 10, 1);
 
-    user.profile = { // Profile.create
+    client.profile = { // Profile.create
       hobby: 'it, js',
       education: 'it-incubator',
-      user: user
+      // user: user // это можно не делать
     } as Profile
 
-    user.wallets = [
+    client.wallets = [
       {
         title: 'Main wallet',
         currency: 'USD',
         balance: 1000,
-        owner: user
+        // owner: client // можем и нет смысла указывать
       } as Wallet
     ]
-
-
-    return user;
+    return client;
   }
 
   // точно хотим засорять юзера профилем?
-  @OneToOne(() => Profile, (profile) => profile.user, {
+  @OneToOne(() => Profile, (profile) => profile.client, {
     cascade: true // благодаря этому мы можем сохраняя юзера применить изменения и на данную сущность
   })
   profile: Profile;

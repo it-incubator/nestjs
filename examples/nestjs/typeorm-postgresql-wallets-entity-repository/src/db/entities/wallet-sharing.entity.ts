@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToOne, JoinColumn } from 'typeorm';
 import {Wallet} from "./wallet.entity";
-import {User} from "./user.entity";
+import {Client} from "./user.entity";
 import {WalletSharingLimit} from "./wallet-sharing-limit.entity";
 import { BaseDBEntity } from './baseDBEntity';
 
@@ -12,8 +12,8 @@ export class WalletSharing extends BaseDBEntity {
 
   // если решим засорить юзера кошельками, то делаем навигационное обратное св-во
   // @ManyToOne(() => User, (user) => user.walletSharings)
-  @ManyToOne(() => User)
-  user: User;
+  @ManyToOne(() => Client)
+  user: Client;
 
   @Column({ type: 'smallint', nullable: true })
   status: number;

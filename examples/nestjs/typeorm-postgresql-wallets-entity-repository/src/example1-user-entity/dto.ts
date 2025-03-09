@@ -13,4 +13,7 @@ export class InputUserDto {
 
   @ApiPropertyOptional({ description: 'Marital status of the user', example: true })
   isMarried?: boolean;
+
+  @ApiPropertyOptional({ description: 'Work status', example: 'work, vacation' })
+  status: 'work' | 'vacation';
 }

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { User } from '../db/entities/user.entity';
+import { Client } from '../db/entities/user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Profile } from '../db/entities/profile.entity';
@@ -15,7 +15,7 @@ export class ProfilesController {
     @Get()
     async getAllProfiles(): Promise<Profile[]> {
         return await this.profilesRepo.find({ relations: {
-            user: {
+            client: {
                 wallets: true
             } } });
     }
@@ -28,14 +28,14 @@ export class ProfilesController {
     @Post()
     async createProfile(@Body() createProfileDto: InputProfileDto): Promise<Profile> {
         const profile = this.profilesRepo.create(createProfileDto);
-        profile.user = {id: createProfileDto.userId} as User;
+        profile.client = {id: createProfileDto.userId} as Client;
         return await this.profilesRepo.save(profile);
     }
 
     @Post('create-with-user')
     async createProfileWithUser(@Body() createProfileDto: InputProfileDto): Promise<Profile> {
         const profile = this.profilesRepo.create(createProfileDto);
-        profile.user = {firstName: 'dimych', isMarried: false, lastName: 'kuzyuberdin'} as User;
+        profile.client = {firstName: 'dimych', isMarried: false, lastName: 'kuzyuberdin'} as Client;
         return await this.profilesRepo.save(profile);
     }
 

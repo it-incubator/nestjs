@@ -3,13 +3,13 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Wallet } from '../db/entities/wallet.entity';
 import { InputWalletDto } from './dto';
-import { User } from '../db/entities/user.entity';
+import { Client } from '../db/entities/user.entity';
 
 @Controller('example3/wallets')
 export class WalletsController {
     constructor(
         @InjectRepository(Wallet) private walletsRepo: Repository<Wallet>,
-        @InjectRepository(User) private usersRepo: Repository<User>
+        @InjectRepository(Client) private usersRepo: Repository<Client>
     ) {
     }
 
@@ -26,7 +26,7 @@ export class WalletsController {
     @Post()
     async createWallet(@Body() createWalletDto: InputWalletDto): Promise<Wallet> {
         const wallet = this.walletsRepo.create(createWalletDto);
-        wallet.owner = { id: createWalletDto.ownerId } as User;
+        wallet.owner = { id: createWalletDto.ownerId } as Client;
         return await this.walletsRepo.save(wallet);
     }
 
