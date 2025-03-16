@@ -1,0 +1,9 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: dimych
+      POSTGRES_PASSWORD: it-incubator.io
+      POSTGRES_DB: query_builder
+    ports:
+      - "5532:5432"
