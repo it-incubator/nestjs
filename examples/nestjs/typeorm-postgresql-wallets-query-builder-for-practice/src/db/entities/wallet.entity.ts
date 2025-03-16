@@ -25,7 +25,9 @@ export class Wallet {
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' }) // Use timestamptz
   lastTransactionAt: Date | null
 
-  @ManyToOne(() => User, (user) => user.wallets)
+  @ManyToOne(() => User, (user) => user.wallets, {
+    nullable: false
+  })
   owner: User // {id: 2} as User
   @Column()
   ownerId: number

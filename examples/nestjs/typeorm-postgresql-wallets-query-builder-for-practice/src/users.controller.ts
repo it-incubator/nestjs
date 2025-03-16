@@ -112,7 +112,7 @@ export class UsersController {
     const users = await this.usersRepo
       .createQueryBuilder("u")
       .select([
-        "id",
+        'u.id as "id"',
         'u.firstName as "firstName"',
         'u.lastName as "lastName"',
       ])
@@ -191,7 +191,7 @@ export class UsersController {
     const wallets = await this.walletsRepo
       .createQueryBuilder("w")
       //.leftJoin(User, "u", 'u.id = w.owner.id')
-      .leftJoin('w.owner', "u")
+      .leftJoin('w.owner', 'u')
       .select(['u.firstName as "ownerFirstName"', 'w.currency as "currency"', 'w.addedAt as "addedAt"'])
       .getRawMany();
     return wallets;
@@ -199,11 +199,12 @@ export class UsersController {
 
   @Get("wallets-paginated-with-row-number-with-cte")
   async walletsPaginatedWithRowNumber() {
+    // мы не хотим возвращать row number
     const walletsWithRowsNumberBuilder = this.walletsRepo
       .createQueryBuilder("w")
       .select([
         'w.addedAt as "walletAt"', 'w.title as "title"',
-        'ROW_NUMBER() OVER (ORDER BY w.addedAt) AS "walletNumber"',
+        'ROW_NUMBER() OVER (ORDER BY w.addedAt) AS "wallet_number"',
       ]);
 
     const wallets = await this.dataSource
@@ -212,9 +213,9 @@ export class UsersController {
         walletsWithRowsNumberBuilder,
         "wallets_with_rows_number",
       )
-      .select('wrn.*')
+      .select(['wrn."walletAt"', 'wrn."title"'])
       .from("wallets_with_rows_number", "wrn")
-      .where('wrn."walletNumber" BETWEEN :from and :to', { from: 10, to: 20 })
+      .where('wrn.wallet_number BETWEEN :from and :to', { from: 10, to: 20 })
       .getRawMany();
 
     return wallets;
@@ -319,6 +320,7 @@ export class UsersController {
     };
   }
 
+  //
   @Get("users-with-wallets-jsonb_agg-with_default-emptyarray")
   @ApiPagination()
   async getWalletsWithOwner_jsonb_agg(
@@ -368,6 +370,7 @@ export class UsersController {
     };
   }
 
+  // ✅
   @Get("users-with-wallets-count-with-subquery")
   @ApiPagination()
   async getUsersWithWalletsCountWithSubQuery(
@@ -376,17 +379,17 @@ export class UsersController {
   ) {
     let ownerIdsWithWalletsCounts = (sq: SelectQueryBuilder<Wallet>) =>
       sq
-        .select(["w.ownerId", "count(1) as count"])
+        .select(['w.owner.id as "ownerId"', 'count(*) as "count"'])
         .from(Wallet, "w")
-        .groupBy("w.ownerId");
+        .groupBy("w.owner.id");
 
     const users = await this.usersRepo
       .createQueryBuilder("u")
-      .select(["u.*", '"walletsCounts".count'])
+      .select(['u.firstName as "clientFirstName"', '"walletsCounts".count'])
       .leftJoin(
         ownerIdsWithWalletsCounts,
-        "walletsCounts",
-        '"walletsCounts"."ownerId" = u."id"',
+        'walletsCounts',
+        '"walletsCounts"."ownerId" = u.id',
       )
       .getRawMany();
 
@@ -426,6 +429,8 @@ export class UsersController {
     };
   }
 
+
+// ✅
   @Get("users-with-top-wallets")
   @ApiPagination()
   async getUsersWithTopWallets2(
@@ -434,34 +439,36 @@ export class UsersController {
   ) {
     const users = await this.dataSource
       .createQueryBuilder()
-      .select(["u.*", 'wcount."walletCount"', "w.*"])
+      .select(['_u.*', '_wcount."walletCount"', "_w.*"])
       .from((subQuery) => {
         return subQuery
-          .select("*")
+          .select(['u.firstName as "clientFirstName"', 'u.id as "clientId"'])
           .from(User, "u")
           .offset((page - 1) * limit)
           .limit(limit);
-      }, "u")
-      .leftJoinAndMapMany(
-        "u.wallets",
+      }, "_u")
+        // используем это если не делаем агрегацию внутри БД
+      .leftJoinAndMapMany(// засунем масив элементов в сво-во
+        "u.wallets", // вот в это сво-во
         (subQuery) =>
           subQuery
             .select([
-              "w.*",
-              'ROW_NUMBER() OVER (PARTITION BY w."ownerId" ORDER BY w."balance" DESC) as rank',
+              'w.balance as "balance"',
+              'w.owner.id as "ownerId"',
+              'ROW_NUMBER() OVER (PARTITION BY w.owner.id ORDER BY w.balance DESC) as "rank"',
             ])
-            .from(Wallet, "w"),
-        "w",
-        'w."ownerId" = u."id" AND w.rank <= 2',
+            .from(Wallet, 'w'),
+        "_w",
+        '_w."ownerId" = _u."clientId" AND _w."rank" <= 2',
       )
       .leftJoin(
         (sq) =>
           sq
-            .select(['w.ownerId as "ownerId", COUNT(*) AS "walletCount"'])
+            .select(['w.owner.id as "ownerId", COUNT(*) AS "walletCount"'])
             .from(Wallet, "w")
-            .groupBy("w.ownerId"),
-        "wcount",
-        'u.id = wcount."ownerId"',
+            .groupBy("w.owner.id"),
+        "_wcount",
+        '_u."clientId" = _wcount."ownerId"',
       )
       .getRawMany();
 

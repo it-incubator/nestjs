@@ -1,0 +1,29 @@
+@startuml
+
+actor User
+participant "Registration Service" as RS
+participant "Database" as DB
+
+User -> RS: Register (username, password, email)
+RS -> DB: Insert user (without email) into users table
+RS -> DB: Insert email into Confirmations table with expiration date
+RS -> User: Send confirmation email
+
+User -> RS: Confirm email (with token)
+RS -> DB: Validate token and check expiration
+alt Valid token
+    RS -> DB: Update user status to confirmed
+    RS -> DB: Move email to users table
+else Expired token
+    RS -> DB: Delete email from Confirmations table
+end
+
+User -> RS: Register with same email
+RS -> DB: Check email in Confirmations table
+alt Email still in confirmation period
+    RS -> User: Registration denied, resend confirmation link option
+else Email expired
+    RS -> DB: Allow new registration, remove old confirmation record
+end
+
+@enduml

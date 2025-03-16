@@ -1,0 +1,20 @@
+@startuml
+
+entity "Users" {
+  * id : UUID [PK]
+  * username : VARCHAR
+  * password_hash : VARCHAR
+  * status : ENUM('pending', 'confirmed')
+}
+
+entity "Confirmations" {
+  * id : UUID [PK]
+  * user_id : UUID [FK → Users.id]
+  * email : VARCHAR [Unique]
+  * token : VARCHAR
+  * expires_at : TIMESTAMP
+}
+
+Users ||--o{ Confirmations : has
+
+@enduml
