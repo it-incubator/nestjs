@@ -1,8 +1,10 @@
 import { config } from 'dotenv';
+import { envFilePaths } from './env-file-paths';
+config({
+  path: envFilePaths,
+});
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { options } from './db/options';
-
-config();
 
 const migrationOptions: DataSourceOptions = {
   ...options,

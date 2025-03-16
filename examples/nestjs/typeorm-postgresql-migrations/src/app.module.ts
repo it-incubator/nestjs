@@ -1,3 +1,4 @@
+import { configModule } from './dynamic-config-module';
 import { Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -11,6 +12,7 @@ import { options } from './db/options';
 
 @Module({
   imports: [
+    configModule,
     TypeOrmModule.forRoot({
       ...options,
       autoLoadEntities: true,

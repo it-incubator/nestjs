@@ -29,7 +29,7 @@ export class UsersController {
 
   @Get()
   async getAll(): Promise<User[]> {
-    const album = await this.albumsRepo.findOne({});
+    //const album = await this.albumsRepo.findOne({});
 
     return this.usersRepo.find();
   }
