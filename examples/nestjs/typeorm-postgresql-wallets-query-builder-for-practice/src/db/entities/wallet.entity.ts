@@ -29,8 +29,8 @@ export class Wallet {
     nullable: false
   })
   owner: User // {id: 2} as User
-  @Column()
-  ownerId: number
+  // @Column()
+  // ownerId: number
 
   @OneToMany(() => WalletSharing, (walletSharing) => walletSharing.wallet)
   walletSharings: WalletSharing[];
