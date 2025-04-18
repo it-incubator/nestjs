@@ -1,6 +1,6 @@
-import {Body, Controller, Get, Post} from '@nestjs/common';
-import {CatsService} from "./cat.service";
-import {Cat} from "./entities/cat.entity";
+import { Body, Controller, Get, Post } from '@nestjs/common';
+import { CatsService } from './cat.service';
+import { Cat } from './entities/cat.entity';
 
 @Controller()
 export class AppController {

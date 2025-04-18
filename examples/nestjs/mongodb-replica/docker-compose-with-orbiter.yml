@@ -27,6 +27,14 @@ services:
     ports:
       - 27019:27019
     command: ["mongod", "--replSet", "rs0", "--port", "27019", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
+
+  mongo-arbiter:
+    <<: *mongo-base
+    container_name: mongo-arbiter
+    ports:
+      - 27020:27020
+    command: ["mongod", "--replSet", "rs0", "--port", "27020", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
+
 networks:
   mongo-cluster:
     driver: bridge
