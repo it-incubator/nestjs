@@ -18,9 +18,9 @@ export class UsersController {
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(Profile) private profilesRepo: Repository<Profile>,
     @InjectRepository(Wallet) private walletsRepo: Repository<Wallet>,
-   // @InjectRepository(WalletView)
+    // @InjectRepository(WalletView)
     // private walletsViewsRepo: Repository<WalletView>,
-     @InjectRepository(WalletSharing)
+    @InjectRepository(WalletSharing)
     private walletSharingRepo: Repository<WalletSharing>,
     @InjectRepository(WalletSharingLimit)
     private accountRepo: Repository<WalletSharingLimit>,
@@ -102,31 +102,9 @@ export class UsersController {
     }
   }
 
-
   @Get("users-full-entities-raw")
   @ApiPagination()
   async usersFullEntitiesRaw(
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-  ) {
-    const users = await this.usersRepo
-      .createQueryBuilder("u")
-      .select([
-        'u.id as "id"',
-        'u.firstName as "firstName"',
-        'u.lastName as "lastName"',
-      ])
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getRawMany();
-
-    return users;
-  }
-
-
-  @Get("users-entities-raw-with-aliases")
-  @ApiPagination()
-  async usersEntitiesWithAliases(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ) {
@@ -156,17 +134,21 @@ export class UsersController {
   ) {
     let userSelectQueryBuilder = this.usersRepo
       .createQueryBuilder("u")
-      .select(['u.id as "id"', 'u.firstName as "firstName"', 'u.lastName as "lastName"']);
+      .select([
+        'u.id as "id"',
+        'u.firstName as "firstName"',
+        'u.lastName as "lastName"',
+      ]);
 
     if (firstName) {
-      userSelectQueryBuilder.where('u.firstName like :firstName', {
+      userSelectQueryBuilder.where("u.firstName like :firstName", {
         firstName: `%${firstName}%`,
       });
     }
 
     userSelectQueryBuilder.skip((page - 1) * limit).take(limit);
 
-    const users = await userSelectQueryBuilder.getRawMany();
+    const users = await userSelectQueryBuilder.getMany();
     const count = await userSelectQueryBuilder.getCount();
     return { users, count };
   }
@@ -178,21 +160,28 @@ export class UsersController {
       .select([
         'w.currency as "currency"',
         'w.addedAt as "addedAt"',
-        'w.ownerId as "ownerId"',
-          'CAST(ROW_NUMBER() OVER (PARTITION BY w.owner.id ORDER BY w.addedAt) as INT) AS "walletNumber"',
+        'w.owner.id as "ownerId"',
+        'CAST(ROW_NUMBER() OVER (PARTITION BY w.owner.id ORDER BY w.addedAt) as INT) AS "walletNumber"',
       ])
-        .where('w.owner.id = :ownerId', {ownerId: 12})
+      .where("w.owner.id = :ownerId", { ownerId: 21 })
       .getRawMany();
     return wallets;
   }
 
-  @Get("wallets-with-owner-name")
+  @Get("wallets-with-owner-name-and-education")
   async walletsWithOwnerFirstName() {
     const wallets = await this.walletsRepo
       .createQueryBuilder("w")
       //.leftJoin(User, "u", 'u.id = w.owner.id')
-      .leftJoin('w.owner', 'u')
-      .select(['u.firstName as "ownerFirstName"', 'w.currency as "currency"', 'w.addedAt as "addedAt"'])
+      .leftJoin("w.owner", "u")
+      .leftJoin("u.profile", "p")
+      // .leftJoin('w.owner.profile', 'p') // ❌
+      .select([
+        'u.firstName as "ownerFirstName"',
+        'p.education as "ownerEducation"',
+        'w.currency as "currency"',
+        'w.addedAt as "addedAt"',
+      ])
       .getRawMany();
     return wallets;
   }
@@ -203,19 +192,20 @@ export class UsersController {
     const walletsWithRowsNumberBuilder = this.walletsRepo
       .createQueryBuilder("w")
       .select([
-        'w.addedAt as "walletAt"', 'w.title as "title"',
-        'ROW_NUMBER() OVER (ORDER BY w.addedAt) AS "wallet_number"',
+        "w.addedAt as wallet_added_at",
+        "w.title as wallet_title",
+        "ROW_NUMBER() OVER (ORDER BY w.addedAt) AS wallet_number",
       ]);
 
     const wallets = await this.dataSource
       .createQueryBuilder()
-      .addCommonTableExpression(
-        walletsWithRowsNumberBuilder,
-        "wallets_with_rows_number",
-      )
-      .select(['wrn."walletAt"', 'wrn."title"'])
-      .from("wallets_with_rows_number", "wrn")
-      .where('wrn.wallet_number BETWEEN :from and :to', { from: 10, to: 20 })
+      .addCommonTableExpression(walletsWithRowsNumberBuilder, "wrn")
+      .select([
+        'wrn.wallet_added_at as "walletAt" ',
+        'wrn.wallet_title as "title"',
+      ])
+      .from("wrn", "wrn")
+      .where("wrn.wallet_number BETWEEN :from and :to", { from: 10, to: 20 })
       .getRawMany();
 
     return wallets;
@@ -225,19 +215,23 @@ export class UsersController {
   async walletsPaginatedWithRowNumberWithSubquery() {
     let walletsWithNumbersQueryBuilderFactory = (
       subQueryBuilder: SelectQueryBuilder<Wallet>,
-    ) =>
+    ) => {
       subQueryBuilder
         .select([
-          'w.title as "title"',
-          'w.addedAt as "addedAt"',
-          'ROW_NUMBER() OVER (ORDER BY w.addedAt) AS "walletNumber"',
+          "w.title as wallet_title",
+          "w.addedAt as added_at",
+          "ROW_NUMBER() OVER (ORDER BY w.addedAt) AS wallet_number",
         ])
         .from(Wallet, "w");
 
+      return subQueryBuilder;
+    };
+
     const wallets = await this.dataSource
       .createQueryBuilder()
+      .select(['wrn.wallet_title as "title"', 'wrn.added_at as "addedAt"'])
       .from(walletsWithNumbersQueryBuilderFactory, "wrn")
-      .where('wrn."walletNumber" BETWEEN 10 and 20')
+      .where("wrn.wallet_number BETWEEN 10 and 20")
       .getRawMany();
 
     return wallets;
@@ -249,14 +243,15 @@ export class UsersController {
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ) {
-    let userSelectQueryBuilder = this.usersRepo.createQueryBuilder("u");
+    // let userSelectQueryBuilder = this.usersRepo.createQueryBuilder("u"); // ✅
+    let userSelectQueryBuilder = this.dataSource
+      .createQueryBuilder()
+      .from(User, "u"); // ✅
 
     const total = await userSelectQueryBuilder.getCount();
 
     const paginatedUsersQueryBuilder = userSelectQueryBuilder
-      // без алиаса колонки может быть ошибка в .where
-      //.select('u.id')
-      .select("u.id", "paginatedUserId")
+      .select("u.id", "paginated_user_id")
       .orderBy("u.lastName", "ASC")
       .skip((page - 1) * limit)
       .take(limit);
@@ -266,18 +261,69 @@ export class UsersController {
     const users = await this.usersRepo
       .createQueryBuilder("u")
       .addCommonTableExpression(paginatedUsersQueryBuilder, "paginated_users")
-      .leftJoinAndSelect("u.wallets", "w")
-      .where(`u.id IN (SELECT "paginatedUserId" FROM "paginated_users")`)
-      .getMany();
-    // некорректно будет возврат кол-ва
-    //.getManyAndCount();
+      .select("u.firstName", "firstName")
+      .addSelect("u.id", "id")
+      .addSelect("w.title", "walletTitle")
+      .addSelect("w.id", "walletId")
+      .leftJoin("u.wallets", "w")
+      .where(`u.id IN (SELECT paginated_user_id FROM paginated_users)`)
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getRawMany();
+
+    const usersMap = new Map();
+
+    users.forEach((user) => {
+      if (!usersMap.has(user.id)) {
+        usersMap.set(user.id, {
+          firstName: user.firstName,
+          id: user.id,
+          wallets: [],
+        });
+      }
+      usersMap
+        .get(user.id)
+        .wallets.push({ id: user.walletId, title: user.walletTitle });
+    });
+
+    // [{firstName: '', wallets: []},{firstName: '', wallets: []},{firstName: '', wallets: []},{firstName: '', wallets: []}]
 
     return {
-      data: users,
+      data: Array.from(usersMap.values()),
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  @Get("users-with-wallets-jsonb_agg-with_default-emptyarray")
+  @ApiPagination()
+  async getWalletsWithOwner_jsonb_agg(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ) {
+    const wallets = await this.dataSource
+      .createQueryBuilder(User, "u")
+      .select("u.id", "id")
+      .addSelect("u.firstName", "firstName")
+      .addSelect(
+        `COALESCE(
+                jsonb_agg(
+                       json_build_object('id', w.id, 'balance', w.balance, 'currency', w.currency, 'addedAt', w.addedAt, 'deletedAt', w.deletedAt)
+                    ) FILTER (WHERE w.id IS NOT NULL),
+                '[]')`,
+        "wallets",
+      )
+      .leftJoin("u.wallets", "w")
+      .groupBy("u.id")
+      .limit(limit)
+      .getRawMany();
+
+    return {
+      data: wallets,
+      page,
+      limit,
     };
   }
 
@@ -287,13 +333,29 @@ export class UsersController {
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ) {
-    const wallets = await this.dataSource
+    const walletsBuilder = this.dataSource
       .createQueryBuilder(Wallet, "w")
-      .leftJoinAndSelect("w.owner", "u")
-      .getMany();
+        .select('w.id', 'id')
+        .addSelect('w.title', 'title')
+        .addSelect('u.firstName', 'ownerFirstName')
+        .leftJoin("w.owner", "u");
+
+    const walletsPromise = walletsBuilder
+        .getRawMany();
+
+    const wallets = await walletsPromise;
+
+    const formattedWallets = wallets.map(wallet => ({
+      id: wallet.id,
+      title: wallet.title,
+      owner: {
+        firstName: wallet.ownerFirstName
+      }
+    }));
+
 
     return {
-      data: wallets,
+      data: formattedWallets,
       page,
       limit,
     };
@@ -307,11 +369,11 @@ export class UsersController {
   ) {
     const wallets = await this.dataSource
       .createQueryBuilder(Wallet, "w")
-      .select(["w.*", `json_build_object('firstName', u.firstName) as owner`])
-      .leftJoin("w.owner", "u")
-      .getRawMany();
-    // не будет работать
-    //.getMany();
+        .select('w.id', 'id')
+        .addSelect('w.title', 'title')
+        .addSelect(`json_build_object('firstName', u.firstName) `, 'owner')
+        .leftJoin("w.owner", "u")
+        .getRawMany();
 
     return {
       data: wallets,
@@ -321,34 +383,6 @@ export class UsersController {
   }
 
   //
-  @Get("users-with-wallets-jsonb_agg-with_default-emptyarray")
-  @ApiPagination()
-  async getWalletsWithOwner_jsonb_agg(
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-  ) {
-    const wallets = await this.dataSource
-      .createQueryBuilder(User, "u")
-      .select(["u.id", 'u."firstName"'])
-      .addSelect(
-        `COALESCE(
-                jsonb_agg(
-                       json_build_object('id', w.id, 'balance', w.balance, 'currency', w.currency, 'addedAt', w."addedAt", 'deletedAt', w."deletedAt")
-                    ) FILTER (WHERE w.id IS NOT NULL),
-                '[]')  
-                as wallets`,
-      )
-      .leftJoin("u.wallets", "w")
-      .groupBy("u.id")
-      .getRawMany();
-    //.getMany();
-
-    return {
-      data: wallets,
-      page,
-      limit,
-    };
-  }
 
   @Get("users-with-wallets-count")
   @ApiPagination()
@@ -388,7 +422,7 @@ export class UsersController {
       .select(['u.firstName as "clientFirstName"', '"walletsCounts".count'])
       .leftJoin(
         ownerIdsWithWalletsCounts,
-        'walletsCounts',
+        "walletsCounts",
         '"walletsCounts"."ownerId" = u.id',
       )
       .getRawMany();
@@ -429,8 +463,7 @@ export class UsersController {
     };
   }
 
-
-// ✅
+  // ✅
   @Get("users-with-top-wallets")
   @ApiPagination()
   async getUsersWithTopWallets2(
@@ -439,7 +472,7 @@ export class UsersController {
   ) {
     const users = await this.dataSource
       .createQueryBuilder()
-      .select(['_u.*', '_wcount."walletCount"', "_w.*"])
+      .select(["_u.*", '_wcount."walletCount"', "_w.*"])
       .from((subQuery) => {
         return subQuery
           .select(['u.firstName as "clientFirstName"', 'u.id as "clientId"'])
@@ -447,8 +480,9 @@ export class UsersController {
           .offset((page - 1) * limit)
           .limit(limit);
       }, "_u")
-        // используем это если не делаем агрегацию внутри БД
-      .leftJoinAndMapMany(// засунем масив элементов в сво-во
+      // используем это если не делаем агрегацию внутри БД
+      .leftJoinAndMapMany(
+        // засунем масив элементов в сво-во
         "u.wallets", // вот в это сво-во
         (subQuery) =>
           subQuery
@@ -457,7 +491,7 @@ export class UsersController {
               'w.owner.id as "ownerId"',
               'ROW_NUMBER() OVER (PARTITION BY w.owner.id ORDER BY w.balance DESC) as "rank"',
             ])
-            .from(Wallet, 'w'),
+            .from(Wallet, "w"),
         "_w",
         '_w."ownerId" = _u."clientId" AND _w."rank" <= 2',
       )
