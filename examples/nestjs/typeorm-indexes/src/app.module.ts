@@ -8,10 +8,10 @@ import { User } from "./db/entities/user.entity";
     TypeOrmModule.forRoot({
       type: "postgres",
       host: "localhost",
-      port: 5442,
-      username: "postgres",
+      port: 5532,
+      username: "dimych",
       password: "it-incubator.io",
-      database: "TypeOrmIndexesLesson",
+      database: "example_db",
       autoLoadEntities: true,
       synchronize: true,
       logging: true,
