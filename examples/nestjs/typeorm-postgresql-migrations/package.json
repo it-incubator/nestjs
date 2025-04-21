@@ -18,8 +18,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "cross-env NODE_ENV=testing && node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "cross-env NODE_ENV=testing && jest --config ./test/jest-e2e.json",
-    "add-empty-migration": "typeorm-ts-node-commonjs migration:create  ./src/migrations/empty",
-    "generate-migration": "pnpm apply-migrations && cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:generate -d ./src/migrations-data-source.ts",
+    "add-empty-migration": "cross-env NODE_ENV=development && typeorm-ts-node-commonjs migration:create  ./src/migrations/empty",
+    "generate-migration": "cross-env NODE_ENV=development && pnpm apply-migrations && cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:generate -d ./src/migrations-data-source.ts",
     "apply-migrations": "typeorm-ts-node-commonjs migration:run -d ./src/migrations-data-source.ts",
     "revert-migration": "cross-env NODE_ENV=development typeorm-ts-node-commonjs migration:revert -d ./src/migrations-data-source.ts"
   },
