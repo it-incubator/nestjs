@@ -2,14 +2,14 @@ import {Column, Entity, Index, PrimaryGeneratedColumn} from "typeorm";
 
 @Entity()
 //@Index('first_last_names_index_fg837g487g478', ['firstName', 'lastName'])
-@Index('idx_user_first_name_covering', {
-  /**
-   * CREATE INDEX idx_user_first_name_covering
-   *       ON "user" ("firstName")
-   *       INCLUDE ("lastName", "id", "email");
-   */
-  synchronize: false // покрывающий индекс
-})
+// @Index('idx_user_first_name_covering', {
+//   /**
+//    * CREATE INDEX idx_user_first_name_covering
+//    *       ON "user" ("firstName")
+//    *       INCLUDE ("lastName", "id", "email");
+//    */
+//   synchronize: false // покрывающий индекс
+// })
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
