@@ -17,13 +17,14 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('cats')
     .build();
+
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
   const port = process.env.PORT ?? 3000;
 
   await app.listen(port, () => {
-    console.log('App started at: http://localhost:3000 ');
+    console.log(`App started at: http://localhost:${port}/api`);
   });
 }
 bootstrap();
