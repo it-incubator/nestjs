@@ -1,0 +1,21 @@
+@startuml
+actor Client
+
+Client -> API : create/read/update
+API -> CommandHandler : handle command
+CommandHandler -> Repository : request entity
+Repository -> Database : execute SQL
+Database --> Repository : raw data
+Repository -> Repository : map to Entity (Factory)
+Repository --> CommandHandler : Entity
+CommandHandler -> DomainEntity : make business logic
+CommandHandler -> Repository : Save(entity)
+Repository -> Repository : entity change detection -> SQL
+Repository -> Database : save changes
+Database --> Repository : save result
+CommandHandler --> API : NotificationObject
+API --> QueryHandler
+API <-- QueryHandler: DTO
+Client <-- QueryHandler: DTO
+
+@enduml

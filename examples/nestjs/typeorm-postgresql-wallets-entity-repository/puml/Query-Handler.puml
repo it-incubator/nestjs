@@ -1,0 +1,16 @@
+
+@startuml
+actor Client
+
+Client -> API : GET request
+API -> QueryHandler : handle query
+QueryHandler -> QueryRepository : get raw data
+QueryRepository -> Database : execute SQL
+Database --> QueryRepository : raw result
+QueryRepository -> QueryRepository : map to DTO
+QueryRepository --> QueryHandler : raw/DTO
+QueryHandler -> QueryHandler : map to DTO\n+ apply rules/access
+QueryHandler --> API : DTO
+API --> Client : DTO response
+
+@enduml

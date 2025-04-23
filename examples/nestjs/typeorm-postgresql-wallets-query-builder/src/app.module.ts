@@ -16,7 +16,7 @@ import {WalletView} from "./db/entities/wallet.view";
       port: 5532,
       username: 'dimych',
       password: 'it-incubator.io',
-      database: 'query_builder',
+      database: 'example_db',
       autoLoadEntities: true,
       synchronize: true,
       logging: true,
