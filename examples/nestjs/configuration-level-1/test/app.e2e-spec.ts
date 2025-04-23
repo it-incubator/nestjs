@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { CoreConfig } from '../src/core/core.config';
 import { NestFactory } from '@nestjs/core';
-import { UsersConfig } from '../src/features/users/config/users.config';
+import { UsersConfig } from '../src/modules/users/config/users.config';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;

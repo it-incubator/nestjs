@@ -7,11 +7,12 @@ import { configValidationUtility } from '../../../core/config-validation.utility
 export class PaymentConfig {
   @IsNotEmpty({
     message:
-      'Set Env variable PAYMENT_PAYPAL_SECRET, you can take it in Paypal Shop Control Panel',
+        'Set Env variable PAYMENT_PAYPAL_SECRET, you can take it in Paypal Shop Control Panel',
   })
-  paypalSecret: string = this.configService.get('PAYMENT_PAYPAL_SECRET');
+  paypalSecret: string;
 
   constructor(private configService: ConfigService<any, true>) {
+    this.paypalSecret = this.configService.get('PAYMENT_PAYPAL_SECRET');
     configValidationUtility.validateConfig(this);
   }
 }

@@ -1,10 +1,10 @@
 // import of this config module must be on the top of imports
 import { configModule } from './dynamic-config-module';
-import { UsersModule } from './features/users/users.module';
+import { UsersModule } from './modules/users/users.module';
 import { DynamicModule, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { TestingModule } from './features/testing/testing.module';
-import { PaymentModule } from './features/payment/payment.module';
+import { TestingModule } from './modules/testing/testing.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 import { AppController } from './app.controller';
 import { CoreModule } from './core/core.module';

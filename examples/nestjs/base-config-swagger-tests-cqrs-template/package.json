@@ -25,6 +25,8 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/cqrs": "^11.0.3",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.1.5",
+    "class-validator": "^0.14.1",
     "cross-env": "^7.0.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
