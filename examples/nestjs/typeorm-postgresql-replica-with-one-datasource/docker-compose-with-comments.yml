@@ -1,0 +1,63 @@
+version: '3.8'  # Указываем версию файла Docker Compose.
+
+x-postgres-common:  # Определяем общие настройки для сервисов PostgreSQL.
+  &postgres-common  # Создаем якорь с именем 'postgres-common' для повторного использования настроек.
+  image: postgres:14-alpine  # Используем официальный образ PostgreSQL 14 на базе Alpine Linux.
+  user: postgres  # Устанавливаем пользователя внутри контейнера.
+  restart: always  # Автоматически перезапускаем контейнер при сбоях.
+  healthcheck:  # Определяем проверку состояния контейнера.
+    test: 'pg_isready -U user --dbname=postgres'  # Команда для проверки доступности PostgreSQL.
+    interval: 10s  # Интервал между проверками состояния.
+    timeout: 5s  # Таймаут для каждой проверки.
+    retries: 5  # Количество попыток перед признанием контейнера недоступным.
+
+services:
+  postgres_primary:  # Сервис для основного (мастер) сервера PostgreSQL.
+    <<: *postgres-common  # Включаем все настройки из 'postgres-common'.
+    ports:
+      - 5433:5432  # Пробрасываем порт 5432 контейнера на порт 5433 хоста.
+    environment:  # Переменные окружения для настройки PostgreSQL.
+      POSTGRES_USER: user  # Пользователь базы данных.
+      POSTGRES_DB: postgres  # Имя базы данных.
+      POSTGRES_PASSWORD: password  # Пароль пользователя.
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256\nhost replication all 0.0.0.0/0 md5"
+      # Настраиваем метод аутентификации и разрешаем репликацию с любого хоста.
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+      # Дополнительные аргументы для инициализации базы данных.
+    command: |
+      postgres  # Запускаем PostgreSQL сервер.
+      -c wal_level=replica  # Устанавливаем уровень WAL для репликации.
+      -c hot_standby=on  # Включаем режим горячего резерва.
+      -c max_wal_senders=10  # Максимальное количество процессов отправки WAL.
+      -c max_replication_slots=10  # Максимальное количество слотов репликации.
+      -c hot_standby_feedback=on  # Предотвращаем конфликтные ситуации с очисткой WAL.
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Монтируем файл инициализации SQL в контейнер.
+
+  postgres_replica:  # Сервис для реплики PostgreSQL.
+    <<: *postgres-common  # Включаем общие настройки.
+    ports:
+      - 5434:5432  # Пробрасываем порт 5432 контейнера на порт 5434 хоста.
+    environment:
+      PGUSER: replicator  # Пользователь для репликации.
+      PGPASSWORD: replicator_password  # Пароль пользователя репликации.
+    command: |
+      bash -c "  # Используем bash для выполнения нескольких команд.
+      if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then  # Проверяем, инициализирована ли база данных.
+        echo 'Initializing replica...'  # Сообщаем о начале инициализации.
+        until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=postgres_primary --port=5432  # Пытаемся сделать бэкап с мастера.
+        do
+          echo 'Waiting for primary to connect...'  # Если не удалось, ждем и повторяем.
+          sleep 1s
+        done
+        echo 'Backup done, starting replica...'  # Бэкап завершен, запускаем реплику.
+      else
+        echo 'Data directory exists, starting replica...'  # Данные уже есть, просто запускаем реплику.
+      fi
+      chmod 0700 /var/lib/postgresql/data  # Устанавливаем права доступа к директории данных.
+      postgres  # Запускаем PostgreSQL сервер.
+      "
+    depends_on:
+      - postgres_primary  # Указываем зависимость от мастера.
+
+
