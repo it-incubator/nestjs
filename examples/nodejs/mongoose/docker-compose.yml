@@ -1,0 +1,13 @@
+services:
+  mongo-development:
+    image: mongo
+    restart: always
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_DATABASE: my-app
+
+
+
+
+

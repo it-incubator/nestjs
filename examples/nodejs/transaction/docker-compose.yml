@@ -1,0 +1,32 @@
+x-mongo-base: &mongo-base
+  build: .
+  networks:
+    - mongo-cluster
+  environment:
+    MONGO_INITDB_ROOT_USERNAME: root
+    MONGO_INITDB_ROOT_PASSWORD: example
+
+services:
+  mongo1:
+    <<: *mongo-base
+    container_name: mongo1
+    ports:
+      - 27017:27017
+    command: ["mongod", "--replSet", "rs0", "--port", "27017", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
+
+  mongo2:
+    <<: *mongo-base
+    container_name: mongo2
+    ports:
+      - 27018:27018
+    command: ["mongod", "--replSet", "rs0", "--port", "27018", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
+
+  mongo3:
+    <<: *mongo-base
+    container_name: mongo3
+    ports:
+      - 27019:27019
+    command: ["mongod", "--replSet", "rs0", "--port", "27019", "--bind_ip_all", "--keyFile", "/data/mongo-keyfile"]
+networks:
+  mongo-cluster:
+    driver: bridge

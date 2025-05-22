@@ -6,7 +6,7 @@ export class CreateCatInputDTO {
   @Min(10)
   @Max(100)
   @IsOptional()
-  price?: number;
+  price: number | null;
   /**
    * cat type
    * @example 'toy'

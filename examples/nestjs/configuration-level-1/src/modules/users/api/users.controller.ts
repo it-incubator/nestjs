@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument, UserModelType } from '../domain/user.entity';
 import { UserInputDTO } from './userInputDTO';
 import { UsersConfig } from '../config/users.config';
+import * as process from "node:process";
 
 console.log('process.env.MONGO_URI: ', process.env.MONGO_URI);
 
@@ -24,7 +25,7 @@ export class UsersController {
     const user = new this.UserModel();
     user.login = body.login;
     user.email = body.email;
-    user.isConfirmed = this.usersConfig.isAutomaticallyConfirmed;
+    user.isConfirmed =  this.usersConfig.isAutomaticallyConfirmed;
     await user.save();
     return user;
   }

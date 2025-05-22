@@ -9,10 +9,10 @@ export const configValidationUtility = {
         .map((error) => {
           const currentValue = error.value;
           const constraints = Object.values(error.constraints || {}).join(', ');
-          return `${constraints} (current value: ${currentValue})`;
+          return `😵 ${constraints} (current value: ${currentValue})`;
         })
         .join('; ');
-      throw new Error('Validation failed: ' + sortedMessages);
+      throw new Error('❌ Validation failed: ' + sortedMessages);
     }
   },
   convertToBoolean(value: string) {

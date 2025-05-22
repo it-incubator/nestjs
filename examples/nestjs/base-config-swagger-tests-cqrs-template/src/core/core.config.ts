@@ -20,8 +20,8 @@ export class CoreConfig {
   )
   port: number;
 
-  constructor(private configService: ConfigService<any, true>) {
-    this.port = parseInt(this.configService.get('PORT'));
+  constructor(configService: ConfigService<any, true>) {
+    this.port = parseInt(configService.get('PORT'));
 
     configValidationUtility.validateConfig(this);
   }

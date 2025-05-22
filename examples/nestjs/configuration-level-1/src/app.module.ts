@@ -9,7 +9,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { AppController } from './app.controller';
 import { CoreModule } from './core/core.module';
 import { CoreConfig } from './core/core.config';
-debugger;
+
 @Module({
   imports: [
     CoreModule,
