@@ -102,6 +102,11 @@ export class UsersController {
     }
   }
 
+  // ============================================================================================
+  // 3. getMany vs getRawMany: ключевая разница
+  // ============================================================================================
+
+  // 3.1. getMany() — возвращает экземпляры сущностей
   @Get("users-full-entities")
   @ApiPagination()
   async usersFullEntities(
@@ -109,40 +114,21 @@ export class UsersController {
     @Query("limit") limit: number = 10,
   ) {
     const [users, total] = await this.usersRepo
-      // так как билдер строим на основе сущности User, то и таблица будет users,
-      // необходимо указать только alias 'u'
+      // createQueryBuilder() без аргумента — алиас не задан,
+      // TypeORM сам сгенерирует алиас из имени сущности
       .createQueryBuilder()
-      // вместо limit и offset, используем skip и take, потому что в некоторых случаях они могут
-      // более хитрый SQL запрос
-      .skip((page - 1) * limit) // рекомендуем не использолвать, а юзать limit/offset
-      .take(limit)
-      // эта функция сделат 2 запроса, первый - получит все данные, второй - общее кол-во
-      .getManyAndCount();
-
-    console.log(users[0] instanceof User);
-
-    return {
-      data: users,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
-  }
-
-  @Get("users-full-entities-with-wallets")
-  @ApiPagination()
-  async usersFullEntitiesWithWallets(
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-  ) {
-    const [users, total] = await this.usersRepo
-      .createQueryBuilder("u")
-      .leftJoinAndSelect("u.wallets", "w") // when use select we can use leftJoin instead of leftJoinAndSelect
-      .select(["u.id", "u.firstName", "w.id", "w.balance"])
+      // skip = OFFSET, take = LIMIT
+      // Рекомендуем использовать offset/limit для raw-запросов,
+      // skip/take — для getMany (TypeORM может генерировать подзапрос для корректной пагинации)
       .skip((page - 1) * limit)
       .take(limit)
+      // getManyAndCount() выполняет ДВА SQL-запроса:
+      // 1) SELECT ... LIMIT ... OFFSET ... — данные
+      // 2) SELECT COUNT(*) — общее кол-во
       .getManyAndCount();
+
+    // результат — экземпляры сущности User
+    console.log(users[0] instanceof User); // true
 
     return {
       data: users,
@@ -153,6 +139,8 @@ export class UsersController {
     };
   }
 
+  // 3.2. getRawMany() — возвращает "сырые" данные (plain objects)
+  // Без явных алиасов — имена полей будут с префиксом таблицы
   @Get("users-full-entities-raw")
   @ApiPagination()
   async usersFullEntitiesRaw(
@@ -168,12 +156,13 @@ export class UsersController {
       ])
       .skip((page - 1) * limit)
       .take(limit)
+      // getRawMany — plain objects, НЕ экземпляры сущности
       .getRawMany();
 
     return users;
   }
 
-  // не заострять на этом примере внимание (примерно то что просходит под капотом)
+  // Дополнительный пример: raw + class-transformer (не основной подход)
   @Get("users-entities-raw-with-transformation")
   @ApiPagination()
   async usersEntitiesWithTransformation(
@@ -182,11 +171,13 @@ export class UsersController {
   ) {
     const users = await this.usersRepo
       .createQueryBuilder("u")
+      // обращаемся к колонкам БД напрямую (snake_case)
       .select(["id", "first_name", "last_name"])
       .skip((page - 1) * limit)
       .take(limit)
       .getRawMany();
 
+    // plainToInstance маппит raw-данные в DTO по декораторам @Expose
     const transformedUsers = plainToInstance(UserViewModel, users, {
       excludeExtraneousValues: true,
     });
@@ -194,6 +185,7 @@ export class UsersController {
     return transformedUsers;
   }
 
+  // getRawMany() с правильными алиасами — основной подход для query-репозиториев
   @Get("users-entities-raw-with-aliases")
   @ApiPagination()
   async usersEntitiesWithAliases(
@@ -203,8 +195,8 @@ export class UsersController {
     const users = await this.usersRepo
       .createQueryBuilder("u")
       .select([
-        'id as "id"',
-        'u.firstName as "firstName"',
+        'id as "id"',                  // колонка id → свойство "id"
+        'u.firstName as "firstName"',  // двойные кавычки обязательны для camelCase в PostgreSQL
         'u.lastName as "lastName"',
       ])
       .skip((page - 1) * limit)
@@ -214,33 +206,11 @@ export class UsersController {
     return users;
   }
 
-  @Get("users-entities-raw-with-filter")
-  @ApiPagination()
-  @ApiQuery({ name: "firstName", required: false, type: String })
-  async usersEntitiesWithFilter(
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-    @Query("firstName") firstName: string | null = null,
-    //  @Query('sortBy') sortBy: string = 'id',
-    // @Query('sortOrder') sortOrder: string = 'asc'
-  ) {
-    let userSelectQueryBuilder = this.usersRepo
-      .createQueryBuilder("u")
-      .select(["id", '"firstName"', '"lastName"']);
+  // ============================================================================================
+  // 4. Базовые примеры
+  // ============================================================================================
 
-    if (firstName) {
-      userSelectQueryBuilder.where('"firstName" like :firstName', {
-        firstName: firstName,
-      });
-    }
-
-    userSelectQueryBuilder.skip((page - 1) * limit).take(limit);
-
-    const users = await userSelectQueryBuilder.getRawMany();
-    const count = await userSelectQueryBuilder.getCount();
-    return { users, count };
-  }
-
+  // 4.2. Частичная выборка полей (partial select) — getMany с ограниченным набором полей
   @Get("users-partially-entities")
   @ApiPagination()
   async usersPartiallyEntities(
@@ -249,16 +219,21 @@ export class UsersController {
   ) {
     const users = await this.usersRepo
       .createQueryBuilder("u")
-      // перечисляем нужные колонки, которые хотим получить, обращаясь к алисасу 'u
+      // перечисляем ТОЛЬКО нужные поля через "алиас.поле"
+      // Это НЕ raw SQL, а нотация TypeORM для свойств сущности.
+      // TypeORM сам транслирует "u.firstName" в SQL и маппит обратно.
+      // Алиасы (as "...") здесь не нужны и не работают — это формат для getRawMany()
       .select(["u.id", "u.firstName", "u.lastName"])
-      // с точки зрения sql так корректно, но не получится спарсить результат в сущности
+      // ВАЖНО: .select(['u.*']) — SQL валидный, но TypeORM не сможет распарсить результат в сущность
       //.select(['u.*'])
       .skip((page - 1) * limit)
       .take(limit)
+      // getMany() вернёт экземпляры User, но ТОЛЬКО с выбранными полями
       .getMany();
 
-    console.log("isMarried: ", users[0].isMarried);
-    console.log("hasOwnProperty: ", users[0].hasOwnProperty("isMarried"));
+    // невыбранные поля НЕ существуют на объекте — их нет вообще!
+    console.log("isMarried: ", users[0].isMarried); // undefined
+    console.log("hasOwnProperty: ", users[0].hasOwnProperty("isMarried")); // false
 
     let total = 10;
     return {
@@ -270,35 +245,101 @@ export class UsersController {
     };
   }
 
+  // 4.4. Динамическое построение запроса (фильтрация)
+  @Get("users-entities-raw-with-filter")
+  @ApiPagination()
+  @ApiQuery({ name: "firstName", required: false, type: String })
+  async usersEntitiesWithFilter(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+    @Query("firstName") firstName: string | null = null,
+  ) {
+    // сохраняем QueryBuilder в переменную — будем дополнять условно
+    let userSelectQueryBuilder = this.usersRepo
+      .createQueryBuilder("u")
+      .select(["id", '"firstName"', '"lastName"']);
+
+    // динамически добавляем WHERE, только если есть фильтр
+    if (firstName) {
+      // :firstName — параметризованное значение (защита от SQL-инъекций)
+      userSelectQueryBuilder.where('"firstName" like :firstName', {
+        firstName: firstName,
+      });
+    }
+
+    userSelectQueryBuilder.skip((page - 1) * limit).take(limit);
+
+    // один и тот же QueryBuilder для данных и для count
+    const users = await userSelectQueryBuilder.getRawMany();
+    const count = await userSelectQueryBuilder.getCount();
+    return { users, count };
+  }
+
+  // ============================================================================================
+  // 5. JOIN: объединение таблиц
+  // ============================================================================================
+
+  // 5.1. leftJoinAndSelect — загрузка связей в сущности
+  @Get("users-full-entities-with-wallets")
+  @ApiPagination()
+  async usersFullEntitiesWithWallets(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ) {
+    const [users, total] = await this.usersRepo
+      .createQueryBuilder("u")
+      // LEFT JOIN + автоматический маппинг в свойство u.wallets
+      // "u.wallets" — имя связи из сущности User (@OneToMany wallets)
+      // Когда используется .select(), можно заменить leftJoinAndSelect на leftJoin
+      .leftJoinAndSelect("u.wallets", "w")
+      // выбираем конкретные поля — TypeORM маппит в свойства сущностей
+      .select(["u.id", "u.firstName", "w.id", "w.balance"])
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data: users,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // Дополнительный пример: leftJoinAndMapMany — маппинг JOIN в произвольное свойство
   @Get("users-with-wallets")
   @ApiPagination()
   async getUsersWithWallets(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ) {
-
     const users = await this.usersRepo
-        .createQueryBuilder("u")
-        .leftJoinAndMapMany(
-            "u.wallets",
-            "u.wallets",
-            "w"
-        )
-        .select(["u.id", 'w.id', "w.balance", "w.title"])
-        .getMany();
+      .createQueryBuilder("u")
+      // leftJoinAndMapMany — в отличие от leftJoinAndSelect, позволяет
+      // замаппить результат JOIN в ПРОИЗВОЛЬНОЕ свойство объекта (не обязательно
+      // совпадающее с именем связи в сущности).
+      // 1-й аргумент: куда маппить ("u.wallets" — свойство на результате)
+      // 2-й аргумент: что джойнить ("u.wallets" — связь из сущности)
+      // 3-й аргумент: алиас ("w")
+      // 4-й аргумент (необязательный): доп. условие к ON
+      //   Пример: .leftJoinAndMapMany("u.wallets", "u.wallets", "w", "w.balance > 100")
+      //   SQL: LEFT JOIN wallet w ON w."ownerId" = u.id AND w.balance > 100
+      //   TypeORM сам добавляет условие связи из @ManyToOne, а 4-й аргумент дополняет через AND.
+      //   Можно использовать параметры: "w.currency = :cur", { cur: "USD" }
+      //   Этот 4-й аргумент работает так же в leftJoinAndSelect и leftJoin.
+      .leftJoinAndMapMany("u.wallets", "u.wallets", "w")
+      .select(["u.id", "w.id", "w.balance", "w.title"])
+      .getMany();
 
+    // Можно маппить в кастомное свойство, которого нет в сущности User:
+    // .leftJoinAndMapMany("u.topWallets", "u.wallets", "w", "w.balance > 100")
+    // SQL: LEFT JOIN wallet w ON w."ownerId" = u.id AND w.balance > 100
+    // Результат: users[0].topWallets = [{ id: '...', balance: 150 }, ...]
+    // TypeScript не знает о свойстве topWallets — нужен каст (as any)
+    // или добавление свойства в класс.
+    // Элементы массива — экземпляры Wallet (сущности, не plain objects).
 
-    // const users = await this.usersRepo
-    //   .createQueryBuilder("u")
-    //   .select(['u.id as "id"', 'w.balance as "balance"'])
-    //   .leftJoin("u.wallets", "w")
-    //   .skip((page - 1) * limit)
-    //   .take(limit)
-    //   // в этом случае пагинация будет работать некорректно, и будет пагинировать
-    //   // не по юзерам, а по юзер + кошелек, а юзеров будет очень много, так как мноо кошельков у каждого юзера
-    //   //.offset((page - 1) * limit)
-    //   //.limit(limit)
-    //   .getRawMany();
     const total = 10;
     return {
       data: users,
@@ -309,6 +350,150 @@ export class UsersController {
     };
   }
 
+  // 5.2. Проблема пагинации при JOIN
+  // LEFT JOIN создаёт строку для КАЖДОЙ пары (user, wallet).
+  // offset/limit считает строки JOIN-результата, а не юзеров!
+  // Юзер с 10 кошельками = 10 строк → LIMIT 10 вернёт кошельки ОДНОГО юзера.
+  // Решение — CTE "сначала ID, потом данные" (см. 7.3)
+  @Get("users-with-wallets-pagination-problem")
+  @ApiPagination()
+  async getUsersWithWalletsPaginationProblem(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ) {
+    const users = await this.usersRepo
+      .createQueryBuilder("u")
+      .select(['u.id as "id"', 'w.balance as "balance"'])
+      // LEFT JOIN: каждая пара (user, wallet) = отдельная строка
+      .leftJoin("u.wallets", "w")
+      // ПРОБЛЕМА: offset/limit считает строки после JOIN, а не юзеров
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany();
+    // Попробуйте: limit=10, и увидите данные ~1 юзера вместо 10
+
+    return { data: users };
+  }
+
+  // 5.3. leftJoin с кастомным условием — для raw-запросов
+  @Get("wallets-with-owner-name")
+  async walletsWithOwnerFirstName() {
+    const wallets = await this.walletsRepo
+      .createQueryBuilder("w")
+      // leftJoin с кастомным ON-условием (не через имя связи):
+      // 1-й аргумент: сущность, 2-й: алиас, 3-й: ON-условие
+      // Здесь условие 'u.id = w."ownerId"' совпадает со связью @ManyToOne в Wallet,
+      // можно было бы написать просто: .leftJoin("w.owner", "u")
+      // Кастомное условие нужно, когда связи в сущности НЕТ —
+      // например, джойн по бизнес-логике: 'u.regionId = w."regionId" AND u.role = :role'
+      .leftJoin(User, "u", 'u.id = w."ownerId"')
+      // двойные кавычки вокруг camelCase-колонок — обязательны в PostgreSQL
+      .select(['u."firstName"', 'w."currency"', 'w."addedAt"'])
+      .getRawMany();
+    return wallets;
+  }
+
+  // ============================================================================================
+  // 6. JSON-функции PostgreSQL: формирование проекций
+  // ============================================================================================
+
+  // 6.1. Подход без JSON — getMany() загружает ВСЕ поля связанной сущности
+  @Get("wallets-with-owner")
+  @ApiPagination()
+  async getWalletsWithOwner(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ) {
+    const wallets = await this.dataSource
+      // createQueryBuilder(Wallet, "w") — билдер через DataSource с указанием сущности
+      .createQueryBuilder(Wallet, "w")
+      // leftJoinAndSelect — джойним + маппим связь "owner" в свойство Wallet.owner
+      // owner будет содержать ВСЕ поля User (включая passportNumber, isMarried и т.д.)
+      .leftJoinAndSelect("w.owner", "u")
+      .getMany();
+
+    return {
+      data: wallets,
+      page,
+      limit,
+    };
+  }
+
+  // 6.1. json_build_object — вложенный объект с контролем полей
+  @Get("wallets-with-owner-json_build_object")
+  @ApiPagination()
+  async getWalletsWithOwner_json_build_object(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ) {
+    const wallets = await this.dataSource
+      .createQueryBuilder(Wallet, "w")
+      .select([
+        "w.*",
+        // json_build_object — PostgreSQL-функция, создаёт JSON-объект из пар ключ-значение
+        // результат: { "firstName": "User1" } — только нужные поля, ничего лишнего
+        `json_build_object('firstName', u.firstName) as owner`,
+      ])
+      // leftJoin (без AndSelect!) — джойним, но НЕ маппим в сущность
+      .leftJoin("w.owner", "u")
+      // ОБЯЗАТЕЛЬНО getRawMany — getMany() не сможет замаппить JSON-колонку
+      .getRawMany();
+
+    return {
+      data: wallets,
+      page,
+      limit,
+    };
+  }
+
+  // 6.2. jsonb_agg + COALESCE — агрегация one-to-many в массив
+  @Get("users-with-wallets-jsonb_agg-with_default-emptyarray")
+  @ApiPagination()
+  async getWalletsWithOwner_jsonb_agg(
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 10,
+  ) {
+    const wallets = await this.dataSource
+      .createQueryBuilder(User, "u")
+      // select — поля юзера (они же будут в GROUP BY)
+      .select(["u.id", 'u."firstName"'])
+      // addSelect — добавляет выражение в SELECT (не перезатирает .select)
+      .addSelect(
+        // Разбор по слоям (изнутри наружу):
+        // 1) json_build_object(...) — из каждой строки wallet делает JSON-объект
+        // 2) jsonb_agg(...) — собирает все объекты группы в JSON-массив
+        // 3) FILTER (WHERE w.id IS NOT NULL) — исключает NULL-строки от LEFT JOIN
+        // 4) COALESCE(..., '[]') — если нет кошельков, заменяет NULL на пустой массив
+        `COALESCE(
+                jsonb_agg(
+                       json_build_object('id', w.id, 'balance', w.balance, 'currency', w.currency, 'addedAt', w."addedAt", 'deletedAt', w."deletedAt")
+                    ) FILTER (WHERE w.id IS NOT NULL),
+                '[]')
+                as wallets`,
+      )
+      // LEFT JOIN — юзеры БЕЗ кошельков тоже попадут в результат
+      .leftJoin("u.wallets", "w")
+      // GROUP BY — обязателен при использовании агрегатных функций (jsonb_agg)
+      // После GROUP BY одна строка = один юзер → пагинация через offset/limit корректна
+      .groupBy("u.id")
+      // пагинация — работает корректно, т.к. GROUP BY схлопнул строки
+      .offset((page - 1) * limit)
+      .limit(limit)
+      // getRawMany — JSON-агрегаты работают только с raw
+      .getRawMany();
+
+    return {
+      data: wallets,
+      page,
+      limit,
+    };
+  }
+
+  // ============================================================================================
+  // 7. Оконные функции (Window Functions)
+  // ============================================================================================
+
+  // 7.1. ROW_NUMBER с PARTITION BY — нумерация кошельков внутри каждого владельца
   @Get("wallets-with-row-number-by-owner-id")
   async walletsWithRowNumberByOwnerId() {
     const wallets = await this.walletsRepo
@@ -316,55 +501,71 @@ export class UsersController {
       .select([
         "w.currency as currency",
         'w.addedAt as "addedAt"',
+        'w.ownerId as ownerId',
+
+        // ROW_NUMBER() — оконная функция, нумерует строки
+        // PARTITION BY w.ownerId — нумерация начинается заново для каждого владельца
+        // ORDER BY w.addedAt — порядок нумерации внутри группы
+        // CAST(... AS INT) — ROW_NUMBER возвращает bigint, приводим к INT,
+        // иначе pg-драйвер вернёт строку ("1") вместо числа (1).
+        // Альтернатива: PostgreSQL-синтаксис (ROW_NUMBER()...)::INT — короче, но не переносимо на другие БД
         'CAST(ROW_NUMBER() OVER (PARTITION BY w.ownerId ORDER BY w.addedAt) as INT) AS "walletNumber"',
       ])
+      // только getRawMany — оконные функции не маппятся в сущности
       .getRawMany();
     return wallets;
   }
 
+  // 7.2. Database View как альтернатива — если оконная функция нужна в нескольких запросах
   @Get("wallets-with-row-number-from-view")
   async walletsWithRowNumberByOwnerIdFromView() {
     const wallets = await this.walletsViewsRepo
       .createQueryBuilder("w")
+      // getMany() работает — WalletView это обычная "сущность" для TypeORM
       .getMany();
     return wallets;
   }
 
-  @Get("wallets-with-owner-name")
-  async walletsWithOwnerFirstName() {
-    const wallets = await this.walletsRepo
-      .createQueryBuilder("w")
-      .leftJoin(User, "u", 'u.id = w."ownerId"')
-      .select(['u."firstName"', 'w."currency"', 'w."addedAt"'])
-      .getRawMany();
-    return wallets;
-  }
+  // ============================================================================================
+  // 8. CTE и подзапросы
+  // ============================================================================================
 
+  // 8.1. CTE (WITH-выражение) — пагинация по номеру строки
   @Get("wallets-paginated-with-row-number-with-cte")
   async walletsPaginatedWithRowNumber() {
+    // Шаг 1: формируем QueryBuilder — он станет телом CTE
     const walletsWithRowsNumberBuilder = this.walletsRepo
       .createQueryBuilder("w")
       .select([
         "w.*",
+        // ROW_NUMBER() без PARTITION BY — нумерация по ВСЕМ кошелькам
         'ROW_NUMBER() OVER (ORDER BY w."addedAt") AS "walletNumber"',
       ]);
+    // Этот QueryBuilder НЕ выполняется сам — он будет использован как CTE
 
+    // Шаг 2: основной запрос, использующий CTE
     const wallets = await this.dataSource
+      // createQueryBuilder() без сущности — "чистый" билдер
       .createQueryBuilder()
+      // добавляем CTE: WITH "wallets_with_rows_number" AS (SELECT ...)
       .addCommonTableExpression(
         walletsWithRowsNumberBuilder,
         "wallets_with_rows_number",
       )
       .select("wrn.*")
+      // FROM — ссылаемся на CTE по имени
       .from("wallets_with_rows_number", "wrn")
+      // фильтруем по номеру строки (пагинация по walletNumber)
       .where('wrn."walletNumber" BETWEEN :from and :to', { from: 10, to: 20 })
       .getRawMany();
 
     return wallets;
   }
 
+  // 8.2. Подзапрос (Subquery) — та же задача, но через подзапрос вместо CTE
   @Get("wallets-paginated-with-row-number-with-subquery")
   async walletsPaginatedWithRowNumberWithSubquery() {
+    // фабрика подзапроса — TypeORM вызовет эту функцию и подставит результат в FROM
     let walletsWithNumbersQueryBuilderFactory = (
       subQueryBuilder: SelectQueryBuilder<Wallet>,
     ) =>
@@ -377,6 +578,8 @@ export class UsersController {
 
     const wallets = await this.dataSource
       .createQueryBuilder()
+      // .from() принимает фабрику подзапроса вместо имени таблицы
+      // SQL: FROM (SELECT w.*, ROW_NUMBER()... FROM wallet w) wrn
       .from(walletsWithNumbersQueryBuilderFactory, "wrn")
       .where('wrn."walletNumber" BETWEEN 10 and 20')
       .getRawMany();
@@ -384,34 +587,37 @@ export class UsersController {
     return wallets;
   }
 
+  // 8.3. CTE для корректной пагинации с JOIN — паттерн "сначала ID, потом данные"
   @Get("users-with-wallets-with-cte")
   @ApiPagination()
   async getUsersWithWalletsWithCTE(
     @Query("page") page: number = 1,
     @Query("limit") limit: number = 10,
   ) {
+    // Шаг 1: получаем total (до пагинации, без JOIN)
     let userSelectQueryBuilder = this.usersRepo.createQueryBuilder("u");
-
     const total = await userSelectQueryBuilder.getCount();
 
+    // Шаг 2: формируем CTE — список ID юзеров для текущей страницы
     const paginatedUsersQueryBuilder = userSelectQueryBuilder
-      // без алиаса колонки может быть ошибка в .where
-      //.select('u.id')
+      // select с 2 аргументами: колонка + алиас в CTE
       .select("u.id", "paginatedUserId")
       .orderBy("u.lastName", "ASC")
+      // пагинация работает корректно, т.к. нет JOIN!
       .skip((page - 1) * limit)
       .take(limit);
 
-    // for getManyAndCount
-    // const [users, total] = await this.usersRepo
+    // Шаг 3: основной запрос — данные ТОЛЬКО для отобранных юзеров
     const users = await this.usersRepo
       .createQueryBuilder("u")
+      // добавляем CTE: WITH "paginated_users" AS (SELECT u.id ...)
       .addCommonTableExpression(paginatedUsersQueryBuilder, "paginated_users")
+      // теперь безопасно делаем JOIN — мы уже знаем КАКИЕ юзеры нам нужны
       .leftJoinAndSelect("u.wallets", "w")
+      // фильтр: только юзеры, чьи ID есть в CTE
       .where(`u.id IN (SELECT "paginatedUserId" FROM "paginated_users")`)
       .getMany();
-    // некорректно будет возврат кол-ва
-    //.getManyAndCount();
+    // Важно: getManyAndCount() здесь некорректно — count считал бы с JOIN
 
     return {
       data: users,
@@ -419,74 +625,6 @@ export class UsersController {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
-    };
-  }
-
-  @Get("wallets-with-owner")
-  @ApiPagination()
-  async getWalletsWithOwner(
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-  ) {
-    const wallets = await this.dataSource
-      .createQueryBuilder(Wallet, "w")
-      .leftJoinAndSelect("w.owner", "u")
-      .getMany();
-
-    return {
-      data: wallets,
-      page,
-      limit,
-    };
-  }
-
-  @Get("wallets-with-owner-json_build_object")
-  @ApiPagination()
-  async getWalletsWithOwner_json_build_object(
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-  ) {
-    const wallets = await this.dataSource
-      .createQueryBuilder(Wallet, "w")
-      .select(["w.*", `json_build_object('firstName', u.firstName) as owner`])
-      .leftJoin("w.owner", "u")
-      .getRawMany();
-    // не будет работать
-    //.getMany();
-
-    return {
-      data: wallets,
-      page,
-      limit,
-    };
-  }
-
-  @Get("users-with-wallets-jsonb_agg-with_default-emptyarray")
-  @ApiPagination()
-  async getWalletsWithOwner_jsonb_agg(
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-  ) {
-    const wallets = await this.dataSource
-      .createQueryBuilder(User, "u")
-      .select(["u.id", 'u."firstName"'])
-      .addSelect(
-        `COALESCE(
-                jsonb_agg(
-                       json_build_object('id', w.id, 'balance', w.balance, 'currency', w.currency, 'addedAt', w."addedAt", 'deletedAt', w."deletedAt")
-                    ) FILTER (WHERE w.id IS NOT NULL),
-                '[]')  
-                as wallets`,
-      )
-      .leftJoin("u.wallets", "w")
-      .groupBy("u.id")
-      .getRawMany();
-    //.getMany();
-
-    return {
-      data: wallets,
-      page,
-      limit,
     };
   }
 
